@@ -97,6 +97,7 @@ def logout():
     """
     Logout pengguna dan redirect ke halaman login
     """
+    from flask_login import current_user
     nama = current_user.nama_lengkap
     logout_user()
     flash(f'Sampai jumpa, {nama}! Anda telah logout.', 'info')
