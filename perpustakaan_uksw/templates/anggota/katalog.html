@@ -145,30 +145,25 @@
                 <!-- Action Buttons -->
                 <div class="flex gap-2">
                     {% if buku.stok_tersedia > 0 %}
-                    <!-- Buku tersedia - tampilkan tombol pinjam -->
-                    <a href="{{ url_for('anggota.detail_buku', id=buku.id) }}"
-                       class="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors text-center">
-                        <i class="fas fa-book mr-1"></i>Pinjam
-                    </a>
-                    <!-- Tombol Wishlist (langsung simpan) -->
-                    <form method="POST" action="{{ url_for('anggota.toggle_wishlist', id_buku=buku.id) }}" class="flex-shrink-0">
+                    <!-- Buku tersedia - tampilkan tombol Wishlist (langsung simpan) -->
+                    <form method="POST" action="{{ url_for('anggota.toggle_wishlist', id_buku=buku.id) }}" class="flex-1">
                         <input type="hidden" name="next_page" value="{{ url_for('anggota.katalog') }}">
                         {% if buku.id in wishlist_buku_ids %}
                         <button type="submit" 
-                                class="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-colors"
+                                class="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
                                 title="Hapus dari Wishlist">
-                            <i class="fas fa-heart"></i>
+                            <i class="fas fa-heart mr-1"></i>Hapus Wishlist
                         </button>
                         {% else %}
                         <button type="submit" 
-                                class="px-3 py-2 bg-purple-100 hover:bg-purple-200 text-purple-600 rounded-lg transition-colors"
+                                class="w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium"
                                 title="Tambah ke Wishlist">
-                            <i class="far fa-heart"></i>
+                            <i class="far fa-heart mr-1"></i>Wishlist
                         </button>
                         {% endif %}
                     </form>
                     {% else %}
-                    <!-- Buku habis - tampilkan tombol reservasi -->
+                    <!-- Buku habis - tampilkan tombol Reservasi -->
                     <a href="{{ url_for('anggota.reservasi_saya') }}?id_buku={{ buku.id }}&action=reservasi_from_katalog"
                        class="flex-1 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors text-center">
                         <i class="fas fa-bell mr-1"></i>Reservasi
@@ -178,13 +173,13 @@
                         <input type="hidden" name="next_page" value="{{ url_for('anggota.katalog') }}">
                         {% if buku.id in wishlist_buku_ids %}
                         <button type="submit" 
-                                class="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-colors"
+                                class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
                                 title="Hapus dari Wishlist">
                             <i class="fas fa-heart"></i>
                         </button>
                         {% else %}
                         <button type="submit" 
-                                class="px-3 py-2 bg-purple-100 hover:bg-purple-200 text-purple-600 rounded-lg transition-colors"
+                                class="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                                 title="Tambah ke Wishlist">
                             <i class="far fa-heart"></i>
                         </button>
