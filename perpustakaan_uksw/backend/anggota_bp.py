@@ -54,52 +54,48 @@ def dashboard():
 @anggota_bp.route('/katalog')
 @login_required
 def katalog():
-    """
-    Katalog Buku Perpustakaan
-    Grid buku responsive dengan fitur pencarian dan filter
-    Tombol "Pinjam" jika stok>0, "Wishlist" jika stok=0
-    """
-    search = request.args.get('search', '')
+    # Ambil parameter pencarian dan filter
+    query = request.args.get('q', '')
     kategori_id = request.args.get('kategori', type=int)
-    ketersediaan = request.args.get('ketersediaan', '')
     
-    query = Buku.query
+    # Base query
+    buku_query = Buku.query.filter(Buku.stok > 0) # Atau hapus filter stok jika ingin tampilkan semua
     
-    if search:
-        query = query.filter(
-            db.or_(
-                Buku.judul.ilike(f'%{search}%'),
-                Buku.penulis.ilike(f'%{search}%'),
-                Buku.isbn.ilike(f'%{search}%')
+    # Filter Pencarian
+    if query:
+        buku_query = buku_query.filter(
+            or_(
+                Buku.judul.ilike(f'%{query}%'),
+                Buku.penulis.ilike(f'%{query}%'),
+                Buku.penerbit.ilike(f'%{query}%')
             )
         )
     
+    # Filter Kategori
     if kategori_id:
-        query = query.filter(Buku.id_kategori == kategori_id)
+        buku_query = buku_query.filter(Buku.id_kategori == kategori_id)
     
-    # Filter ketersediaan
-    if ketersediaan == 'tersedia':
-        query = query.filter(Buku.stok_tersedia > 0)
-    elif ketersediaan == 'habis':
-        query = query.filter(Buku.stok_tersedia == 0)
+    # Eksekusi query
+    daftar_buku = buku_query.order_by(Buku.judul.asc()).all()
     
-    buku_list = query.order_by(Buku.judul).all()
-    kategori_list = KategoriBuku.query.order_by(KategoriBuku.nama_kategori).all()
-    
-    # Dapatkan daftar ID buku yang sudah di wishlist user
-    wishlist_buku_ids = set()
+    # Ambil ID buku yang sudah di-wishlist oleh user saat ini (untuk efisiensi)
+    wishlist_ids = []
     if current_user.is_authenticated:
-        wishlist_items = current_user.wishlist_items.all()
-        wishlist_buku_ids = {item.id_buku for item in wishlist_items}
+        wishlist_items = Wishlist.query.filter_by(id_anggota=current_user.id).all()
+        wishlist_ids = [item.id_buku for item in wishlist_items]
     
-    return render_template('anggota/katalog.html',
-                         buku_list=buku_list,
-                         kategori_list=kategori_list,
-                         search=search,
-                         selected_kategori=kategori_id,
-                         selected_ketersediaan=ketersediaan,
-                         wishlist_buku_ids=wishlist_buku_ids)
+    # Ambil daftar kategori untuk dropdown filter
+    from perpustakaan_uksw.models import Kategori
+    daftar_kategori = Kategori.query.all()
 
+    return render_template(
+        'anggota/katalog.html', 
+        daftar_buku=daftar_buku, 
+        daftar_kategori=daftar_kategori,
+        wishlist_ids=wishlist_ids, # Kirim data ini ke template
+        query=query,
+        selected_kategori=kategori_id
+    )
 
 @anggota_bp.route('/detail_buku/<int:id>')
 @login_required
