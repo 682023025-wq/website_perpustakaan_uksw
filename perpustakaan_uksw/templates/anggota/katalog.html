@@ -20,7 +20,7 @@
                     <option value="">Semua Kategori</option>
                     {% for kat in daftar_kategori %}
                         <option value="{{ kat.id }}" {% if selected_kategori == kat.id %}selected{% endif %}>
-                            {{ kat.nama_kategori }}
+                            {{ kat.nama }}
                         </option>
                     {% endfor %}
                 </select>
@@ -68,13 +68,11 @@
                         <!-- Tombol Wishlist (Hati Kecil) -->
                         <div class="flex-shrink-0">
                             {% if current_user.is_authenticated %}
-                                <form method="POST" action="{{ url_for('anggota.wishlist_action') }}">
+                                <form method="POST" action="{{ url_for('anggota.toggle_wishlist', id=buku.id) }}">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                    <input type="hidden" name="id_buku" value="{{ buku.id }}">
-                                    {% if buku.id in wishlist_ids %}
-                                        <input type="hidden" name="action" value="hapus">
-                                        <button type="submit" class="focus:outline-none hover:scale-110 transition-transform" 
-                                                title="Hapus dari Wishlist">
+                                    <button type="submit" class="focus:outline-none hover:scale-110 transition-transform" 
+                                            title="{% if buku.id in wishlist_ids %}Hapus dari Wishlist{% else %}Tambah ke Wishlist{% endif %}">
+                                        {% if buku.id in wishlist_ids %}
                                             <i class="fas fa-heart text-red-500 text-xl"></i>
                                         </button>
                                     {% else %}
