@@ -76,9 +76,14 @@
                         <i class="fas fa-heart mr-2"></i>Wishlist Buku Ini
                     </button>
                     {% else %}
-                    <button class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
-                        <i class="fas fa-heart mr-2"></i>Wishlist Buku Ini
-                    </button>
+                    <form method="POST" action="{{ url_for('anggota.wishlist_action') }}" class="flex-1">
+                        <input type="hidden" name="id_buku" value="{{ buku.id }}">
+                        <input type="hidden" name="action" value="tambah">
+                        <input type="hidden" name="next_page" value="anggota.detail_buku">
+                        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-heart mr-2"></i>Wishlist Buku Ini
+                        </button>
+                    </form>
                     {% endif %}
                 </div>
             </div>

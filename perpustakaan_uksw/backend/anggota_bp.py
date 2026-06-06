@@ -4,7 +4,7 @@ Fitur: Katalog, peminjaman saya, reservasi, profil
 """
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from models import db, Pengguna, Buku, Peminjaman, Reservasi, KategoriBuku
+from models import db, Pengguna, Buku, Peminjaman, Reservasi, KategoriBuku, Wishlist
 from datetime import date, timedelta
 
 anggota_bp = Blueprint('anggota', __name__, template_folder='../templates/anggota')
@@ -95,7 +95,7 @@ def katalog():
 def detail_buku(id):
     """
     Detail Lengkap Buku
-    Sinopsis, lokasi rak, tombol aksi (pinjam/reservasi)
+    Sinopsis, lokasi rak, tombol aksi (pinjam/reservasi/wishlist)
     """
     buku = Buku.query.get_or_404(id)
     
@@ -109,10 +109,17 @@ def detail_buku(id):
     # Cek apakah ada reservasi menunggu untuk buku ini
     ada_reservasi_menunggu = buku.has_pending_reservation()
     
+    # Cek apakah buku sudah ada di wishlist user
+    sudah_di_wishlist = Wishlist.query.filter(
+        Wishlist.id_anggota == current_user.id,
+        Wishlist.id_buku == id
+    ).first() is not None
+    
     return render_template('anggota/detail_buku.html',
                          buku=buku,
                          sedang_meminjam=sedang_meminjam,
-                         ada_reservasi_menunggu=ada_reservasi_menunggu)
+                         ada_reservasi_menunggu=ada_reservasi_menunggu,
+                         sudah_di_wishlist=sudah_di_wishlist)
 
 
 @anggota_bp.route('/peminjaman-saya', methods=['GET', 'POST'])
@@ -275,6 +282,71 @@ def reservasi_saya():
     
     return render_template('anggota/reservasi_saya.html',
                          reservasi_list=reservasi_list)
+
+
+@anggota_bp.route('/wishlist', methods=['POST'])
+@login_required
+def wishlist_action():
+    """
+    Tambah/Hapus buku dari wishlist
+    """
+    action = request.form.get('action')
+    id_buku = request.form.get('id_buku')
+    buku = Buku.query.get(id_buku)
+    
+    if not buku:
+        flash('Buku tidak ditemukan.', 'error')
+        return redirect(url_for('anggota.katalog'))
+    
+    if action == 'tambah':
+        # Cek apakah sudah ada di wishlist
+        existing = Wishlist.query.filter(
+            Wishlist.id_anggota == current_user.id,
+            Wishlist.id_buku == id_buku
+        ).first()
+        
+        if existing:
+            flash('Buku ini sudah ada di wishlist Anda.', 'warning')
+        else:
+            # Tambahkan ke wishlist
+            wishlist_baru = Wishlist(
+                id_anggota=current_user.id,
+                id_buku=id_buku
+            )
+            db.session.add(wishlist_baru)
+            db.session.commit()
+            flash(f'Buku "{buku.judul}" berhasil ditambahkan ke wishlist!', 'success')
+    
+    elif action == 'hapus':
+        # Hapus dari wishlist
+        wishlist_item = Wishlist.query.filter(
+            Wishlist.id_anggota == current_user.id,
+            Wishlist.id_buku == id_buku
+        ).first()
+        
+        if wishlist_item:
+            db.session.delete(wishlist_item)
+            db.session.commit()
+            flash('Buku dihapus dari wishlist.', 'info')
+    
+    # Redirect kembali ke halaman sebelumnya
+    next_page = request.form.get('next_page', 'anggota.katalog')
+    return redirect(url_for(next_page))
+
+
+@anggota_bp.route('/wishlist-saya')
+@login_required
+def wishlist_saya():
+    """
+    Daftar Wishlist Saya
+    Menampilkan semua buku yang ada di wishlist
+    """
+    wishlist_items = current_user.wishlist_items.order_by(
+        Wishlist.tanggal_ditambahkan.desc()
+    ).all()
+    
+    return render_template('anggota/wishlist_saya.html',
+                         wishlist_items=wishlist_items)
 
 
 @anggota_bp.route('/profil', methods=['GET', 'POST'])
