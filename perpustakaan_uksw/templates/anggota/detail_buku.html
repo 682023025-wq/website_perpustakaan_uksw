@@ -69,8 +69,17 @@
                     </div>
                 </div>
                 
+                <!-- Helper Text -->
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-lg">
+                    <p class="text-blue-700 text-sm">
+                        💡 <strong>Info:</strong> Buku fisik hanya bisa dipinjam langsung di meja petugas perpustakaan. 
+                        Gunakan tombol di bawah untuk mengecek lokasi rak atau mereservasi jika stok habis.
+                    </p>
+                </div>
+                
                 <!-- Action Buttons -->
-                <div class="flex gap-3">
+                <div class="flex flex-col sm:flex-row gap-3 mt-6">
+                    <!-- Tombol Utama (Primary Action) - Flex-1 -->
                     {% if buku.stok_tersedia > 0 %}
                     <button class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
                         <i class="fas fa-heart mr-2"></i>Wishlist Buku Ini
