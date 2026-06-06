@@ -48,3 +48,8 @@ class Config:
     BOOK_COVER_UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, 'book_covers')
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # Max 5MB per file
     ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    
+    # Konfigurasi Cloudinary untuk upload gambar profil dengan compress
+    CLOUDINARY_CLOUD_NAME = 'daknwopl3'
+    CLOUDINARY_API_KEY = '884765233771594'
+    CLOUDINARY_API_SECRET = 'qOYvn2w1TsW_ipwEzhgqB8RRTKE'
