@@ -18,8 +18,8 @@
             <div class="w-full md:w-1/4">
                 <select name="kategori" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">Semua Kategori</option>
-                    {% for kat in categories %}
-                        <option value="{{ kat.id }}" {% if request.args.get('kategori')|string == kat.id|string %}selected{% endif %}>
+                    {% for kat in daftar_kategori %}
+                        <option value="{{ kat.id }}" {% if selected_kategori == kat.id %}selected{% endif %}>
                             {{ kat.nama }}
                         </option>
                     {% endfor %}
@@ -34,8 +34,7 @@
 
     <!-- Grid Buku -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {% for item in pagination.items %}
-            {% set buku = item.buku %}
+        {% for buku in pagination.items %}
             <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 flex flex-col">
                 <!-- Cover Buku -->
                 <div class="relative h-48 overflow-hidden bg-gray-100">
@@ -49,7 +48,7 @@
                     
                     <!-- Badge Stok -->
                     <div class="absolute top-2 right-2">
-                        {% if buku.stok > 0 %}
+                        {% if buku.stok_tersedia > 0 %}
                             <span class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Tersedia</span>
                         {% else %}
                             <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">Habis</span>
@@ -68,12 +67,12 @@
                         
                         <!-- Tombol Wishlist (Hati Kecil) -->
                         <div class="flex-shrink-0">
-                            {% if user.is_authenticated %}
+                            {% if current_user.is_authenticated %}
                                 <form method="POST" action="{{ url_for('anggota.toggle_wishlist', id=buku.id) }}">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button type="submit" class="focus:outline-none hover:scale-110 transition-transform" 
-                                            title="{% if item.is_in_wishlist %}Hapus dari Wishlist{% else %}Tambah ke Wishlist{% endif %}">
-                                        {% if item.is_in_wishlist %}
+                                            title="{% if buku.id in wishlist_ids %}Hapus dari Wishlist{% else %}Tambah ke Wishlist{% endif %}">
+                                        {% if buku.id in wishlist_ids %}
                                             <i class="fas fa-heart text-red-500 text-xl"></i>
                                         {% else %}
                                             <i class="far fa-heart text-gray-400 hover:text-red-500 text-xl"></i>
@@ -81,7 +80,7 @@
                                     </button>
                                 </form>
                             {% else %}
-                                <a href="{{ url_for('login', next=request.path) }}" class="block cursor-not-allowed" title="Login untuk wishlist">
+                                <a href="{{ url_for('auth.login', next=request.path) }}" class="block cursor-not-allowed" title="Login untuk wishlist">
                                     <i class="far fa-heart text-gray-300 text-xl"></i>
                                 </a>
                             {% endif %}
@@ -92,8 +91,8 @@
                     <p class="text-xs text-gray-500 mb-3">{{ buku.penerbit }}, {{ buku.tahun_terbit }}</p>
                     
                     <div class="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between">
-                        <span class="text-xs font-semibold {{ 'text-green-600' if buku.stok > 0 else 'text-red-600' }}">
-                            Stok: {{ buku.stok }}
+                        <span class="text-xs font-semibold {{ 'text-green-600' if buku.stok_tersedia > 0 else 'text-red-600' }}">
+                            Stok: {{ buku.stok_tersedia }}
                         </span>
                         <a href="{{ url_for('anggota.detail_buku', id=buku.id) }}" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
                             Detail <i class="fas fa-arrow-right ml-1"></i>

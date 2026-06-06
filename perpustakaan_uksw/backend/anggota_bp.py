@@ -58,6 +58,8 @@ def katalog():
     # Ambil parameter pencarian dan filter
     query = request.args.get('q', '')
     kategori_id = request.args.get('kategori', type=int)
+    page = request.args.get('page', 1, type=int)
+    per_page = 12  # Jumlah buku per halaman
     
     # Base query
     buku_query = Buku.query.filter(Buku.stok_tersedia > 0) # Atau hapus filter stok jika ingin tampilkan semua
@@ -76,8 +78,9 @@ def katalog():
     if kategori_id:
         buku_query = buku_query.filter(Buku.id_kategori == kategori_id)
     
-    # Eksekusi query
-    daftar_buku = buku_query.order_by(Buku.judul.asc()).all()
+    # Pagination
+    pagination = buku_query.order_by(Buku.judul.asc()).paginate(page=page, per_page=per_page, error_out=False)
+    daftar_buku = pagination.items
     
     # Ambil ID buku yang sudah di-wishlist oleh user saat ini (untuk efisiensi)
     wishlist_ids = []
@@ -90,6 +93,7 @@ def katalog():
 
     return render_template(
         'anggota/katalog.html', 
+        pagination=pagination,
         daftar_buku=daftar_buku, 
         daftar_kategori=daftar_kategori,
         wishlist_ids=wishlist_ids, # Kirim data ini ke template
