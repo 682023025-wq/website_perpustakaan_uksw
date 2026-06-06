@@ -159,6 +159,7 @@
                     {% set total_days = (p.tgl_jatuh_tempo - p.tgl_pinjam).days %}
                     {% set elapsed_days = (today - p.tgl_pinjam).days if today is defined else 0 %}
                     {% set progress = (elapsed_days / total_days * 100) if total_days > 0 else 0 %}
+                    <!-- /* width: {{ [progress, 100]|min }}% */ -->
                     <div class="absolute left-0 top-0 h-full {% if progress > 90 %}bg-red-500{% elif progress > 70 %}bg-yellow-500{% else %}bg-green-500{% endif %} transition-all duration-300"
                          style="width: {{ [progress, 100]|min }}%"></div>
                 </div>
