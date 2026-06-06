@@ -15,13 +15,12 @@
         
         <!-- Left Column: Profile Card (Read Only) -->
         <div class="lg:col-span-1">
-            <div class="bg-white rounded-xl shadow-md overflow-hidden sticky top-6">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden sticky top-6 border border-gray-100">
                 <div class="bg-gradient-to-r from-uksw-blue-600 to-uksw-blue-700 h-24"></div>
                 <div class="px-6 pb-6 text-center relative">
                     <!-- Avatar -->
                     <div class="w-24 h-24 mx-auto -mt-12 rounded-full border-4 border-white bg-white shadow-lg overflow-hidden flex items-center justify-center bg-gray-100">
                         {% if current_user.foto_profil %}
-                            <!-- Semua foto profil sekarang adalah URL Cloudinary -->
                             <img src="{{ current_user.foto_profil }}" alt="Profile" class="w-full h-full object-cover">
                         {% else %}
                             <span class="text-3xl font-bold text-uksw-blue-600">{{ current_user.nama_lengkap[0].upper() }}</span>
@@ -31,22 +30,22 @@
                     <h2 class="mt-4 text-xl font-bold text-gray-800">{{ current_user.nama_lengkap }}</h2>
                     <p class="text-sm text-gray-500 capitalize mb-4">{{ current_user.peran.replace('_', ' ') }}</p>
                     
-                    <div class="border-t border-gray-100 pt-4 text-left space-y-3 text-sm">
-                        <div class="flex justify-between">
+                    <div class="border-t border-gray-100 pt-4 text-left space-y-3 text-sm px-2">
+                        <div class="flex justify-between py-1">
                             <span class="text-gray-500">NIM/NIP</span>
                             <span class="font-semibold text-gray-800">{{ current_user.nomor_induk }}</span>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between py-1">
                             <span class="text-gray-500">Prodi</span>
                             <span class="font-semibold text-gray-800">{{ current_user.program_studi or '-' }}</span>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between py-1">
                             <span class="text-gray-500">Fakultas</span>
                             <span class="font-semibold text-gray-800">{{ current_user.fakultas or '-' }}</span>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between py-1">
                             <span class="text-gray-500">Email</span>
-                            <span class="font-semibold text-gray-800 truncate max-w-[150px]">{{ current_user.email or '-' }}</span>
+                            <span class="font-semibold text-gray-800 truncate max-w-[120px]" title="{{ current_user.email }}">{{ current_user.email or '-' }}</span>
                         </div>
                     </div>
                 </div>
@@ -62,31 +61,24 @@
                     <i class="fas fa-user-edit text-uksw-blue-500 mr-2"></i> Edit Informasi Pribadi
                 </h3>
                 
-                <form method="POST" action="{{ url_for('anggota.profil') }}" enctype="multipart/form-data" class="space-y-5" id="profil-form">
+                <form method="POST" action="{{ url_for('anggota.profil') }}" enctype="multipart/form-data" class="space-y-5">
                     <input type="hidden" name="action" value="update_profil">
                     
                     <!-- Upload Foto Section -->
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
                         <label class="block text-sm font-medium text-gray-700 mb-3">Foto Profil</label>
                         <div class="flex flex-col md:flex-row gap-6 items-start">
                             <!-- Preview Image -->
-                            <div class="w-24 h-24 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0 border border-gray-300">
+                            <div class="w-24 h-24 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0 border border-gray-300 shadow-sm">
                                 <img id="preview-img" src="{% if current_user.foto_profil %}{{ current_user.foto_profil }}{% else %}https://via.placeholder.com/150?text=UKSW{% endif %}" 
                                      class="w-full h-full object-cover">
                             </div>
                             
-                            <div class="flex-1 w-full space-y-3">
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-500 mb-1">Upload File Baru</label>
-                                    <input type="file" id="foto_upload" name="foto_upload" accept="image/*"
-                                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-uksw-blue-50 file:text-uksw-blue-700 hover:file:bg-uksw-blue-100 transition-colors">
-                                    <p class="text-xs text-gray-400 mt-1">Maksimal 5MB. Format: JPG, PNG, GIF, WEBP.</p>
-                                </div>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-2.5 text-gray-400 text-xs">atau URL</span>
-                                    <input type="url" name="foto_url" id="foto_url" placeholder="https://..."
-                                           class="w-full pl-16 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent">
-                                </div>
+                            <div class="flex-1 w-full">
+                                <label class="block text-xs font-medium text-gray-500 mb-2">Ganti Foto (Max 5MB)</label>
+                                <input type="file" id="foto_upload" name="foto_upload" accept="image/*"
+                                       class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-uksw-blue-50 file:text-uksw-blue-700 hover:file:bg-uksw-blue-100 transition-colors cursor-pointer">
+                                <p class="text-xs text-gray-400 mt-2"><i class="fas fa-info-circle mr-1"></i>Format: JPG, PNG, WEBP. Foto akan dikompres otomatis.</p>
                             </div>
                         </div>
                     </div>
@@ -96,12 +88,12 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Program Studi</label>
                             <input type="text" name="program_studi" value="{{ current_user.program_studi or '' }}"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent transition-all">
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Fakultas</label>
                             <input type="text" name="fakultas" value="{{ current_user.fakultas or '' }}"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent transition-all">
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white">
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Email Aktif</label>
@@ -111,8 +103,8 @@
                         </div>
                     </div>
                     
-                    <div class="pt-2">
-                        <button type="submit" class="bg-uksw-blue-600 hover:bg-uksw-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors shadow-sm flex items-center">
+                    <div class="pt-4 flex justify-end">
+                        <button type="submit" class="bg-uksw-blue-600 hover:bg-uksw-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors shadow-md flex items-center transform active:scale-95">
                             <i class="fas fa-save mr-2"></i> Simpan Perubahan
                         </button>
                     </div>
@@ -134,7 +126,7 @@
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all">
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Kata Sandi Baru</label>
                             <input type="password" name="password_baru" id="new_pass" required minlength="6"
@@ -164,7 +156,6 @@
 <script>
     // Preview Image Upload
     const fotoUploadInput = document.getElementById('foto_upload');
-    const fotoUrlInput = document.getElementById('foto_url');
     const previewImg = document.getElementById('preview-img');
     
     if (fotoUploadInput) {
@@ -183,20 +174,6 @@
                     previewImg.src = e.target.result;
                 }
                 reader.readAsDataURL(file);
-                
-                // Clear URL field jika upload file
-                if (fotoUrlInput) {
-                    fotoUrlInput.value = '';
-                }
-            }
-        });
-    }
-    
-    // Clear file input jika URL diisi
-    if (fotoUrlInput) {
-        fotoUrlInput.addEventListener('input', function() {
-            if (this.value && fotoUploadInput) {
-                fotoUploadInput.value = '';
             }
         });
     }
