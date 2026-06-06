@@ -232,3 +232,27 @@ class Reservasi(db.Model):
         if self.status_antrian != 'siap_diambil' or not self.tgl_notifikasi:
             return False
         return datetime.utcnow() > self.tgl_notifikasi.replace(hour=0, minute=0, second=0)
+
+
+class Wishlist(db.Model):
+    """
+    Model untuk tabel wishlist
+    Menyimpan daftar buku yang ingin dibaca oleh anggota
+    """
+    __tablename__ = 'wishlist'
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id_anggota = db.Column(db.Integer, db.ForeignKey('pengguna.id', ondelete='CASCADE'), nullable=False)
+    id_buku = db.Column(db.Integer, db.ForeignKey('buku.id', ondelete='CASCADE'), nullable=False)
+    tanggal_ditambahkan = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relasi ke pengguna dan buku
+    anggota = db.relationship('Pengguna', backref=db.backref('wishlist_items', lazy='dynamic'))
+    buku = db.relationship('Buku', backref=db.backref('wishlist_items', lazy='dynamic'))
+    
+    __table_args__ = (
+        db.UniqueConstraint('id_anggota', 'id_buku', name='unique_wishlist'),
+    )
+    
+    def __repr__(self):
+        return f'<Wishlist anggota={self.id_anggota} buku={self.id_buku}>'
