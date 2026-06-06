@@ -69,26 +69,65 @@
                     </div>
                 </div>
                 
+                <!-- Helper Text -->
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-lg">
+                    <p class="text-blue-700 text-sm">
+                        💡 <strong>Info:</strong> Buku fisik hanya bisa dipinjam langsung di meja petugas perpustakaan. 
+                        Gunakan tombol di bawah untuk mengecek lokasi rak atau mereservasi jika stok habis.
+                    </p>
+                </div>
+                
                 <!-- Action Buttons -->
-                <div class="flex gap-3">
-                    {% if sudah_di_wishlist %}
-                    <form method="POST" action="{{ url_for('anggota.wishlist_action') }}" class="flex-1">
-                        <input type="hidden" name="id_buku" value="{{ buku.id }}">
-                        <input type="hidden" name="action" value="hapus">
-                        <input type="hidden" name="next_page" value="anggota.detail_buku">
-                        <button type="submit" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
-                            <i class="fas fa-heart-broken mr-2"></i>Hapus dari Wishlist
-                        </button>
-                    </form>
+                <div class="flex flex-col sm:flex-row gap-3 mt-6">
+                    <!-- Tombol Utama (Primary Action) - Flex-1 -->
+                    {% if buku.stok_tersedia > 0 %}
+                    <!-- Stok Tersedia: Cek Ketersediaan di Rak -->
+                    <button type="button" 
+                            onclick="alert('📚 Buku tersedia di Rak {{ buku.lokasi_rak or \\'tidak ditentukan\\' }}. Silakan ambil dan bawa ke meja petugas untuk proses peminjaman.')"
+                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md w-full transition-colors">
+                        <i class="fas fa-search-location mr-2"></i>Cek Ketersediaan di Rak
+                    </button>
                     {% else %}
-                    <form method="POST" action="{{ url_for('anggota.wishlist_action') }}" class="flex-1">
+                    <!-- Stok Habis: Reservasi -->
+                    <form method="POST" action="{{ url_for('anggota.reservasi_buku') }}" class="flex-1">
                         <input type="hidden" name="id_buku" value="{{ buku.id }}">
-                        <input type="hidden" name="action" value="tambah">
-                        <input type="hidden" name="next_page" value="anggota.detail_buku">
-                        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
-                            <i class="fas fa-heart mr-2"></i>Wishlist Buku Ini
+                        <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors">
+                            <i class="fas fa-clock mr-2"></i>Reservasi (Stok Habis)
                         </button>
                     </form>
+                    {% endif %}
+                    
+                    <!-- Tombol Wishlist (Secondary Action) - Bentuk Love -->
+                    {% if session.get('id_pengguna') %}
+                        <!-- User sudah login -->
+                        {% if sudah_di_wishlist %}
+                        <!-- Sudah di wishlist: Hapus -->
+                        <form method="POST" action="{{ url_for('anggota.toggle_wishlist') }}">
+                            <input type="hidden" name="id_buku" value="{{ buku.id }}">
+                            <button type="submit" 
+                                    class="p-3 rounded-lg border-2 border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                                    title="Hapus dari Wishlist">
+                                <i class="fas fa-heart text-xl"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                        <!-- Belum di wishlist: Tambah -->
+                        <form method="POST" action="{{ url_for('anggota.toggle_wishlist') }}">
+                            <input type="hidden" name="id_buku" value="{{ buku.id }}">
+                            <button type="submit" 
+                                    class="p-3 rounded-lg border-2 border-gray-200 bg-white text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors"
+                                    title="Tambah ke Wishlist">
+                                <i class="far fa-heart text-xl"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    {% else %}
+                        <!-- User belum login -->
+                        <a href="{{ url_for('auth.login') }}" 
+                           class="inline-block p-3 rounded-lg border-2 border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed"
+                           title="Login untuk menyimpan wishlist">
+                            <i class="far fa-heart text-xl"></i>
+                        </a>
                     {% endif %}
                 </div>
             </div>
