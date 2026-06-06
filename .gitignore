@@ -1,41 +1,41 @@
-```
-# Compiled Python files
+# Compiled and build artifacts
 *.pyc
-__pycache__/
-
-# Dependencies
+*.pyo
+*.pyd
+.Python
+env/
 venv/
 .venv/
-node_modules/
-
-# Logs and temp files
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
 *.log
-*.tmp
+.DS_Store
+Thumbs.db
 
-# Environment files
-.env
-.env.local
-*.env.*
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
 
-# Editors
+# IDE
 .vscode/
 .idea/
 
-# Build artifacts
+# Environment
+.env
+.env.local
+*.env
+
+# Build and distribution artifacts
 dist/
 build/
-target/
-
-# Coverage reports
-coverage/
-htmlcov/
-.coverage
-
-# Database
-*.db
-*.sqlite3
-
-# OS generated files
-.DS_Store
-Thumbs.db
+*.egg-info/
 ```
