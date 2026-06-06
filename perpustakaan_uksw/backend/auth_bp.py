@@ -3,7 +3,7 @@ Blueprint untuk autentikasi (login/logout) semua aktor
 Menangani proses login dengan hash password dan redirect sesuai peran
 """
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required, current_user
 from models import db, Pengguna
 from functools import wraps
 
@@ -97,8 +97,6 @@ def logout():
     """
     Logout pengguna dan redirect ke halaman login
     """
-    from flask_login import current_user
-    
     nama = current_user.nama_lengkap
     logout_user()
     flash(f'Sampai jumpa, {nama}! Anda telah logout.', 'info')
