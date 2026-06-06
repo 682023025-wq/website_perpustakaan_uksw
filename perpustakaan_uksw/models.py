@@ -53,34 +53,8 @@ class Pengguna(UserMixin, db.Model):
         self.kata_sandi_hash = generate_password_hash(password)
     
     def check_password(self, password):
-        """
-        Verifikasi password dengan hash yang tersimpan.
-        Menangani kasus jika hash kosong atau format tidak valid.
-        """
-        if not self.kata_sandi_hash:
-            return False
-        
-        # Cek apakah string hash terlihat valid (mengandung '$' untuk format werkzeug)
-        if '$' not in self.kata_sandi_hash:
-            # Kemungkinan password masih plain text di DB (data lama/testing)
-            # Bandingkan langsung sebagai fallback
-            import hmac
-            try:
-                return hmac.compare_digest(
-                    self.kata_sandi_hash.encode('utf-8'), 
-                    password.encode('utf-8')
-                )
-            except Exception:
-                return False
-        
-        try:
-            return check_password_hash(self.kata_sandi_hash, password)
-        except ValueError:
-            # Jika error format hash (misal: method tidak dikenali), anggap gagal
-            return False
-        except Exception:
-            # Error lainnya, anggap gagal
-            return False
+        """Verifikasi password dengan hash yang tersimpan"""
+        return check_password_hash(self.kata_sandi_hash, password)
     
     @property
     def is_active(self):
