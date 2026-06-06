@@ -299,50 +299,43 @@ def reservasi_saya():
 @login_required
 def wishlist_action():
     """
-    Tambah/Hapus buku dari wishlist
+    Tambah/Hapus buku dari wishlist (alias untuk toggle_wishlist)
     """
-    action = request.form.get('action')
-    id_buku = request.form.get('id_buku')
-    buku = Buku.query.get(id_buku)
+    return toggle_wishlist()
+
+
+@anggota_bp.route('/toggle-wishlist/<int:id_buku>', methods=['POST'])
+@login_required
+def toggle_wishlist(id_buku):
+    """
+    Toggle wishlist: tambah jika belum ada, hapus jika sudah ada
+    """
+    buku = Buku.query.get_or_404(id_buku)
     
-    if not buku:
-        flash('Buku tidak ditemukan.', 'error')
-        return redirect(url_for('anggota.katalog'))
+    # Cek apakah sudah ada di wishlist
+    existing = Wishlist.query.filter(
+        Wishlist.id_anggota == current_user.id,
+        Wishlist.id_buku == id_buku
+    ).first()
     
-    if action == 'tambah':
-        # Cek apakah sudah ada di wishlist
-        existing = Wishlist.query.filter(
-            Wishlist.id_anggota == current_user.id,
-            Wishlist.id_buku == id_buku
-        ).first()
-        
-        if existing:
-            flash('Buku ini sudah ada di wishlist Anda.', 'warning')
-        else:
-            # Tambahkan ke wishlist
-            wishlist_baru = Wishlist(
-                id_anggota=current_user.id,
-                id_buku=id_buku
-            )
-            db.session.add(wishlist_baru)
-            db.session.commit()
-            flash(f'Buku "{buku.judul}" berhasil ditambahkan ke wishlist!', 'success')
-    
-    elif action == 'hapus':
+    if existing:
         # Hapus dari wishlist
-        wishlist_item = Wishlist.query.filter(
-            Wishlist.id_anggota == current_user.id,
-            Wishlist.id_buku == id_buku
-        ).first()
-        
-        if wishlist_item:
-            db.session.delete(wishlist_item)
-            db.session.commit()
-            flash('Buku dihapus dari wishlist.', 'info')
+        db.session.delete(existing)
+        db.session.commit()
+        flash(f'Buku "{buku.judul}" dihapus dari wishlist.', 'info')
+    else:
+        # Tambahkan ke wishlist
+        wishlist_baru = Wishlist(
+            id_anggota=current_user.id,
+            id_buku=id_buku
+        )
+        db.session.add(wishlist_baru)
+        db.session.commit()
+        flash(f'Buku "{buku.judul}" berhasil ditambahkan ke wishlist!', 'success')
     
     # Redirect kembali ke halaman sebelumnya
-    next_page = request.form.get('next_page', 'anggota.katalog')
-    return redirect(url_for(next_page))
+    next_page = request.form.get('next_page', request.referrer or 'anggota.katalog')
+    return redirect(next_page)
 
 
 @anggota_bp.route('/wishlist-saya')
