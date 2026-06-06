@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Detail Buku - Perpustakaan UKSW{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <a href="{{ url_for('anggota.katalog') }}" class="inline-flex items-center text-primary-600 hover:text-primary-800 mb-4">
+        ← Kembali ke Katalog
+    </a>
+    
+    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3">
+            <!-- Cover Placeholder -->
+            <div class="bg-gradient-to-br from-primary-100 to-sage-100 p-8 flex items-center justify-center">
+                <svg class="w-32 h-32 text-primary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+            </div>
+            
+            <!-- Info Buku -->
+            <div class="md:col-span-2 p-6">
+                {% if buku.kategori %}
+                <span class="text-xs text-primary-600 font-medium bg-primary-50 px-2 py-1 rounded">{{ buku.kategori }}</span>
+                {% endif %}
+                
+                <h1 class="text-2xl font-bold text-gray-800 mt-3">{{ buku.judul }}</h1>
+                <p class="text-lg text-gray-600 mt-1">oleh {{ buku.pengarang }}</p>
+                
+                <div class="mt-4 space-y-2 text-sm">
+                    <div class="flex justify-between border-b pb-2">
+                        <span class="text-gray-500">ISBN:</span>
+                        <span class="font-medium">{{ buku.isbn }}</span>
+                    </div>
+                    <div class="flex justify-between border-b pb-2">
+                        <span class="text-gray-500">Penerbit:</span>
+                        <span class="font-medium">{{ buku.penerbit or '-' }}</span>
+                    </div>
+                    <div class="flex justify-between border-b pb-2">
+                        <span class="text-gray-500">Tahun Terbit:</span>
+                        <span class="font-medium">{{ buku.tahun_terbit or '-' }}</span>
+                    </div>
+                    <div class="flex justify-between border-b pb-2">
+                        <span class="text-gray-500">Stok Tersedia:</span>
+                        <span class="font-medium {% if buku.stok_tersedia > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ buku.stok_tersedia }} / {{ buku.stok_total }}
+                        </span>
+                    </div>
+                </div>
+                
+                {% if buku.deskripsi %}
+                <div class="mt-4">
+                    <h3 class="font-semibold text-gray-800 mb-2">Deskripsi</h3>
+                    <p class="text-gray-600 text-sm">{{ buku.deskripsi }}</p>
+                </div>
+                {% endif %}
+                
+                <!-- Action Buttons -->
+                <div class="mt-6 pt-6 border-t">
+                    {% if sedang_meminjam %}
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                            <p class="text-green-800 font-medium">✓ Anda sedang meminjam buku ini</p>
+                            <p class="text-green-600 text-sm mt-1">Jatuh tempo: {{ sedang_meminjam.tgl_jatuh_tempo.strftime('%d %B %Y') }}</p>
+                        </div>
+                    {% elif sudah_reservasi %}
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                            <p class="text-yellow-800 font-medium">📋 Anda sudah memesan buku ini</p>
+                            <p class="text-yellow-600 text-sm mt-1">Posisi antrian: {{ sudah_reservasi.antrian_ke }}</p>
+                        </div>
+                    {% elif buku.stok_tersedia > 0 %}
+                        <p class="text-sm text-gray-500 mb-3">Stok tersedia! Anda dapat meminjam buku ini di meja petugas.</p>
+                    {% else %}
+                        <form method="POST" action="{{ url_for('anggota.buat_reservasi', buku_id=buku.id) }}" class="inline">
+                            <button type="submit" class="w-full bg-primary-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-primary-700 transition btn-press">
+                                📋 Reservasi Buku Ini (Antrian: {{ antrian_reservasi + 1 }})
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Info Tambahan -->
+    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-start space-x-3">
+            <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+                <h3 class="font-medium text-blue-800">Cara Meminjam</h3>
+                <ul class="text-sm text-blue-700 mt-2 space-y-1">
+                    <li>• Catat ISBN atau judul buku ini</li>
+                    <li>• Datang ke meja petugas perpustakaan</li>
+                    <li>• Berikan kartu anggota Anda (NIM/NIP)</li>
+                    <li>• Petugas akan memproses peminjaman</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

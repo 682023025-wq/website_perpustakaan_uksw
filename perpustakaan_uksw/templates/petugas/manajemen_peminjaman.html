@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Manajemen Peminjaman - Perpustakaan UKSW{% endblock %}
+
+{% block content %}
+<!-- Header dengan Helper Text -->
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800 mb-2">Manajemen Peminjaman & Pengembalian</h1>
+    
+    <!-- Helper Text - WAJIB ADA -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-start space-x-3">
+            <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+                <h3 class="font-medium text-blue-800">Apa yang bisa Anda lakukan di sini?</h3>
+                <p class="text-sm text-blue-700 mt-1">
+                    Gunakan halaman ini untuk melayani anggota. Masukkan NIM/NIP untuk cek kuota, lalu scan buku untuk meminjamkan atau mencatat pengembalian.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Pesan -->
+{% if error_message %}
+<div class="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+    {{ error_message }}
+</div>
+{% endif %}
+
+{% if success_message %}
+<div class="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+    {{ success_message }}
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Panel Kiri: Cek Anggota -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+            1. Cari Anggota
+        </h2>
+        
+        <form method="POST" class="space-y-4">
+            <input type="hidden" name="action" value="cek_anggota">
+            <div>
+                <label for="nim_nip" class="block text-sm font-medium text-gray-700 mb-2">NIM / NIP Anggota</label>
+                <input type="text" 
+                       id="nim_nip" 
+                       name="nim_nip" 
+                       required
+                       placeholder="Contoh: 672020001"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+            </div>
+            <button type="submit" class="w-full bg-primary-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-primary-700 transition btn-press">
+                Cari Anggota
+            </button>
+        </form>
+        
+        <!-- Info Anggota (jika ditemukan) -->
+        {% if anggota %}
+        <div class="mt-6 pt-6 border-t border-gray-200">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h3 class="font-semibold text-green-800 mb-3">Data Anggota Ditemukan</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Nama:</span>
+                        <span class="font-medium text-gray-800">{{ anggota.nama }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">NIM/NIP:</span>
+                        <span class="font-medium text-gray-800">{{ anggota.nim_nip }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Peran:</span>
+                        <span class="font-medium text-gray-800 capitalize">{{ anggota.peran }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Program Studi:</span>
+                        <span class="font-medium text-gray-800">{{ anggota.prodi or '-' }}</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-green-200">
+                        <span class="text-gray-600">Kuota:</span>
+                        {% set kuota = KUOTA_DOSEN if anggota.peran == 'dosen' else KUOTA_MAHASISWA %}
+                        {% set jumlah_pinjam = peminjaman_aktif_list|length %}
+                        <span class="font-medium {% if jumlah_pinjam >= kuota %}text-red-600{% else %}text-green-600{% endif %}">
+                            {{ jumlah_pinjam }} / {{ kuota }} buku
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Input untuk ISBN buku -->
+                <form method="POST" class="mt-4 pt-4 border-t border-green-200">
+                    <input type="hidden" name="action" value="cek_buku">
+                    <input type="hidden" name="pengguna_id" value="{{ anggota.id }}">
+                    <label for="isbn_or_id" class="block text-sm font-medium text-green-800 mb-2">2. Scan/Input ISBN Buku</label>
+                    <div class="flex space-x-2">
+                        <input type="text" 
+                               id="isbn_or_id" 
+                               name="isbn_or_id" 
+                               required
+                               placeholder="ISBN atau ID Buku"
+                               class="flex-1 px-4 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition btn-press">
+                            Cek Buku
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Panel Kanan: Info Buku & Aksi -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+            </svg>
+            Info Buku
+        </h2>
+        
+        {% if buku %}
+        <div class="bg-sage-50 border border-sage-200 rounded-lg p-4 mb-4">
+            <h3 class="font-semibold text-sage-800 mb-2">{{ buku.judul }}</h3>
+            <div class="space-y-1 text-sm">
+                <p class="text-gray-600"><span class="font-medium">Pengarang:</span> {{ buku.pengarang }}</p>
+                <p class="text-gray-600"><span class="font-medium">ISBN:</span> {{ buku.isbn }}</p>
+                <p class="text-gray-600"><span class="font-medium">Stok Tersedia:</span> 
+                    <span class="{% if buku.stok_tersedia > 0 %}text-green-600 font-medium{% else %}text-red-600 font-medium{% endif %}">
+                        {{ buku.stok_tersedia }} / {{ buku.stok_total }}
+                    </span>
+                </p>
+            </div>
+            
+            <!-- Form Peminjaman -->
+            {% if anggota and buku.stok_tersedia > 0 %}
+            <form method="POST" class="mt-4 pt-4 border-t border-sage-200">
+                <input type="hidden" name="action" value="pinjam">
+                <input type="hidden" name="pengguna_id" value="{{ anggota.id }}">
+                <input type="hidden" name="buku_id" value="{{ buku.id }}">
+                <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700 transition btn-press">
+                    ✅ Pinjamkan Buku Ini
+                </button>
+            </form>
+            {% elif buku.stok_tersedia <= 0 %}
+            <div class="mt-4 pt-4 border-t border-sage-200">
+                <p class="text-red-600 text-sm font-medium">⚠️ Stok tidak tersedia</p>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="text-center py-12 text-gray-400">
+            <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+            </svg>
+            <p>Silakan cari anggota dan scan buku terlebih dahulu</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Daftar Peminjaman Aktif Anggota -->
+{% if anggota and peminjaman_aktif_list %}
+<div class="mt-6 bg-white rounded-xl shadow-md p-6">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">Peminjaman Aktif {{ anggota.nama }}</h2>
+    
+    <div class="table-responsive">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Judul Buku</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tgl Pinjam</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jatuh Tempo</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for p in peminjaman_aktif_list %}
+                <tr>
+                    <td class="px-4 py-3 text-sm text-gray-800">{{ p.buku_dipinjam.judul }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ p.tgl_pinjam.strftime('%d %b %Y') }}</td>
+                    <td class="px-4 py-3 text-sm">
+                        {% set days_left = (p.tgl_jatuh_tempo - now()).days if (p.tgl_jatuh_tempo - now()).days > 0 else 0 %}
+                        <span class="{% if days_left < 3 %}text-red-600 font-medium{% else %}text-gray-600{% endif %}">
+                            {{ p.tgl_jatuh_tempo.strftime('%d %b %Y') }}
+                            {% if days_left < 3 %}(⚠️ {{ days_left }} hari){% endif %}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                        <form method="POST" class="inline">
+                            <input type="hidden" name="action" value="kembali">
+                            <input type="hidden" name="peminjaman_id" value="{{ p.id }}">
+                            <button type="submit" class="text-primary-600 hover:text-primary-800 font-medium" data-confirm="Konfirmasi pengembalian buku ini?">
+                                Kembalikan
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Set current time for template
+    function now() {
+        return new Date();
+    }
+</script>
+{% endblock %}

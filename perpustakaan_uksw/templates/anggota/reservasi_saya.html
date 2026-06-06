@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Reservasi Saya - Perpustakaan UKSW{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Reservasi Saya</h1>
+    <p class="text-gray-500">Daftar buku yang Anda pesan</p>
+</div>
+
+{% if semua_reservasi %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for reservasi in semua_reservasi %}
+    <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+        <div class="p-6">
+            <div class="flex justify-between items-start mb-4">
+                <span class="text-xs font-medium bg-primary-50 text-primary-700 px-2 py-1 rounded">
+                    {{ reservasi.buku_dipesan.kategori or 'Umum' }}
+                </span>
+                <span class="text-xs 
+                    {% if reservasi.status == 'menunggu' %}bg-yellow-100 text-yellow-800
+                    {% elif reservasi.status == 'siap_diambil' %}bg-green-100 text-green-800
+                    {% elif reservasi.status == 'dibatalkan' %}bg-red-100 text-red-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %} px-2 py-1 rounded">
+                    {{ reservasi.status|capitalize }}
+                </span>
+            </div>
+            
+            <h3 class="font-semibold text-gray-800 mb-2 line-clamp-2">{{ reservasi.buku_dipesan.judul }}</h3>
+            <p class="text-sm text-gray-600 mb-4">{{ reservasi.buku_dipesan.pengarang }}</p>
+            
+            <div class="space-y-2 text-sm border-t pt-4">
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Tanggal Pesan:</span>
+                    <span class="text-gray-700">{{ reservasi.tgl_reservasi.strftime('%d %b %Y') }}</span>
+                </div>
+                
+                {% if reservasi.status == 'menunggu' %}
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Posisi Antrian:</span>
+                    <span class="font-medium text-primary-600">#{{ reservasi.antrian_ke }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if reservasi.status == 'menunggu' %}
+            <form method="POST" action="{{ url_for('anggota.batalkan_reservasi', id=reservasi.id) }}" class="mt-4">
+                <button type="submit" class="w-full bg-red-50 text-red-600 py-2 rounded-lg text-sm font-medium hover:bg-red-100 transition"
+                        data-confirm="Batalkan reservasi buku ini?">
+                    ❌ Batalkan Reservasi
+                </button>
+            </form>
+            {% elif reservasi.status == 'siap_diambil' %}
+            <div class="mt-4 bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                <p class="text-green-800 text-sm font-medium">✓ Buku siap diambil!</p>
+                <p class="text-green-600 text-xs mt-1">Segera hubungi petugas</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-16 bg-white rounded-xl shadow-md">
+    <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+    </svg>
+    <p class="text-gray-500 text-lg mb-4">Anda belum memesan buku apapun</p>
+    <a href="{{ url_for('anggota.katalog') }}" class="inline-block bg-primary-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-primary-700 transition">
+        Jelajahi Katalog
+    </a>
+</div>
+{% endif %}
+
+<!-- Info -->
+<div class="mt-6 bg-sage-50 border border-sage-200 rounded-lg p-4">
+    <div class="flex items-start space-x-3">
+        <svg class="w-5 h-5 text-sage-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div>
+            <h3 class="font-medium text-sage-800">Tentang Reservasi</h3>
+            <ul class="text-sm text-sage-700 mt-2 space-y-1">
+                <li>• Reservasi otomatis saat stok buku habis</li>
+                <li>• Anda akan mendapat notifikasi saat buku tersedia</li>
+                <li>• Buku akan ditahan untuk Anda selama 3 hari</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
