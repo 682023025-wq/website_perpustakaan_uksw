@@ -49,10 +49,10 @@
         <form method="POST" class="space-y-4">
             <input type="hidden" name="action" value="cek_anggota">
             <div>
-                <label for="nomor_induk" class="block text-sm font-medium text-gray-700 mb-2">Nomor Induk (NIM / NIP) Anggota</label>
+                <label for="nim_nip" class="block text-sm font-medium text-gray-700 mb-2">NIM / NIP Anggota</label>
                 <input type="text" 
-                       id="nomor_induk" 
-                       name="nomor_induk" 
+                       id="nim_nip" 
+                       name="nim_nip" 
                        required
                        placeholder="Contoh: 672020001"
                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
@@ -70,11 +70,11 @@
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between">
                         <span class="text-gray-600">Nama:</span>
-                        <span class="font-medium text-gray-800">{{ anggota.nama_lengkap }}</span>
+                        <span class="font-medium text-gray-800">{{ anggota.nama }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-gray-600">Nomor Induk:</span>
-                        <span class="font-medium text-gray-800">{{ anggota.nomor_induk }}</span>
+                        <span class="text-gray-600">NIM/NIP:</span>
+                        <span class="font-medium text-gray-800">{{ anggota.nim_nip }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Peran:</span>
@@ -82,7 +82,7 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Program Studi:</span>
-                        <span class="font-medium text-gray-800">{{ anggota.program_studi or '-' }}</span>
+                        <span class="font-medium text-gray-800">{{ anggota.prodi or '-' }}</span>
                     </div>
                     <div class="flex justify-between items-center pt-2 border-t border-green-200">
                         <span class="text-gray-600">Kuota:</span>
@@ -168,7 +168,7 @@
 <!-- Daftar Peminjaman Aktif Anggota -->
 {% if anggota and peminjaman_aktif_list %}
 <div class="mt-6 bg-white rounded-xl shadow-md p-6">
-    <h2 class="text-lg font-semibold text-gray-800 mb-4">Peminjaman Aktif {{ anggota.nama_lengkap }}</h2>
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">Peminjaman Aktif {{ anggota.nama }}</h2>
     
     <div class="table-responsive">
         <table class="min-w-full divide-y divide-gray-200">

@@ -48,7 +48,7 @@
             <thead class="bg-gray-50">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nomor Induk</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">NIM/NIP</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Peran</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prodi</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
@@ -58,21 +58,21 @@
             <tbody class="bg-white divide-y divide-gray-200">
                 {% for user in anggota_list %}
                 <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4">{{ user.nama_lengkap }}</td>
-                    <td class="px-6 py-4">{{ user.nomor_induk }}</td>
+                    <td class="px-6 py-4">{{ user.nama }}</td>
+                    <td class="px-6 py-4">{{ user.nim_nip }}</td>
                     <td class="px-6 py-4"><span class="capitalize">{{ user.peran }}</span></td>
-                    <td class="px-6 py-4">{{ user.program_studi or '-' }}</td>
+                    <td class="px-6 py-4">{{ user.prodi or '-' }}</td>
                     <td class="px-6 py-4">
-                        {% if user.status_aktif %}
+                        {% if user.is_aktif %}
                             <span class="text-green-600">✓ Aktif</span>
                         {% else %}
                             <span class="text-red-600">✗ Nonaktif</span>
                         {% endif %}
                     </td>
                     <td class="px-6 py-4 space-x-2">
-                        <button onclick="editUser({{ user.id }}, '{{ user.nama_lengkap }}', '{{ user.email }}', '{{ user.program_studi or '' }}')" 
+                        <button onclick="editUser({{ user.id }}, '{{ user.nama }}', '{{ user.email }}', '{{ user.prodi or '' }}')" 
                                 class="text-blue-600 hover:text-blue-800">Edit</button>
-                        {% if user.status_aktif %}
+                        {% if user.is_aktif %}
                             <form method="POST" action="{{ url_for('admin.nonaktifkan_anggota', id=user.id) }}" class="inline" 
                                   data-confirm="Nonaktifkan akun ini?">
                                 <button type="submit" class="text-red-600 hover:text-red-800">Nonaktifkan</button>
@@ -95,16 +95,15 @@
     <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
         <h3 class="text-lg font-semibold mb-4">Tambah Anggota Baru</h3>
         <form method="POST" action="{{ url_for('admin.tambah_anggota') }}">
-            <input type="text" name="nomor_induk" placeholder="Nomor Induk (NIM/NIP)" required class="w-full mb-3 px-4 py-2 border rounded-lg">
-            <input type="text" name="nama_lengkap" placeholder="Nama Lengkap" required class="w-full mb-3 px-4 py-2 border rounded-lg">
+            <input type="text" name="nim_nip" placeholder="NIM/NIP" required class="w-full mb-3 px-4 py-2 border rounded-lg">
+            <input type="text" name="nama" placeholder="Nama Lengkap" required class="w-full mb-3 px-4 py-2 border rounded-lg">
             <input type="email" name="email" placeholder="Email" required class="w-full mb-3 px-4 py-2 border rounded-lg">
             <input type="password" name="password" placeholder="Password" required class="w-full mb-3 px-4 py-2 border rounded-lg">
             <select name="peran" required class="w-full mb-3 px-4 py-2 border rounded-lg">
                 <option value="mahasiswa">Mahasiswa</option>
                 <option value="dosen">Dosen</option>
             </select>
-            <input type="text" name="program_studi" placeholder="Program Studi" class="w-full mb-3 px-4 py-2 border rounded-lg">
-            <input type="text" name="fakultas" placeholder="Fakultas" class="w-full mb-4 px-4 py-2 border rounded-lg">
+            <input type="text" name="prodi" placeholder="Program Studi" class="w-full mb-4 px-4 py-2 border rounded-lg">
             <div class="flex space-x-3">
                 <button type="submit" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Simpan</button>
                 <button type="button" onclick="document.getElementById('modal-tambah').classList.add('hidden')" 
@@ -120,10 +119,9 @@
         <h3 class="text-lg font-semibold mb-4">Edit Data Anggota</h3>
         <form method="POST" id="form-edit">
             <input type="hidden" name="id" id="edit-id">
-            <input type="text" name="nama_lengkap" id="edit-nama" required class="w-full mb-3 px-4 py-2 border rounded-lg">
+            <input type="text" name="nama" id="edit-nama" required class="w-full mb-3 px-4 py-2 border rounded-lg">
             <input type="email" name="email" id="edit-email" required class="w-full mb-3 px-4 py-2 border rounded-lg">
-            <input type="text" name="program_studi" id="edit-prodi" class="w-full mb-3 px-4 py-2 border rounded-lg">
-            <input type="text" name="fakultas" id="edit-fakultas" class="w-full mb-3 px-4 py-2 border rounded-lg">
+            <input type="text" name="prodi" id="edit-prodi" class="w-full mb-3 px-4 py-2 border rounded-lg">
             <input type="password" name="password" placeholder="Password baru (kosongkan jika tidak diubah)" class="w-full mb-4 px-4 py-2 border rounded-lg">
             <div class="flex space-x-3">
                 <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">Update</button>
@@ -135,12 +133,11 @@
 </div>
 
 <script>
-function editUser(id, nama, email, prodi, fakultas='') {
+function editUser(id, nama, email, prodi) {
     document.getElementById('edit-id').value = id;
     document.getElementById('edit-nama').value = nama;
     document.getElementById('edit-email').value = email;
     document.getElementById('edit-prodi').value = prodi;
-    document.getElementById('edit-fakultas').value = fakultas;
     document.getElementById('modal-edit').classList.remove('hidden');
 }
 </script>

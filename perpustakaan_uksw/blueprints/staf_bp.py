@@ -71,13 +71,13 @@ def manajemen_peminjaman():
         action = request.form.get('action')
         
         if action == 'cek_anggota':
-            # Cari anggota berdasarkan Nomor Induk (NIM/NIP)
-            nomor_induk = request.form.get('nomor_induk')
-            anggota = Pengguna.query.filter_by(nomor_induk=nomor_induk).first()
+            # Cari anggota berdasarkan NIM/NIP
+            nim_nip = request.form.get('nim_nip')
+            anggota = Pengguna.query.filter_by(nim_nip=nim_nip).first()
             
             if not anggota:
-                error_message = 'Nomor Induk tidak ditemukan.'
-            elif not anggota.status_aktif:
+                error_message = 'NIM/NIP tidak ditemukan.'
+            elif not anggota.is_aktif:
                 error_message = 'Akun anggota ini telah dinonaktifkan.'
                 anggota = None
             elif anggota.peran not in ['mahasiswa', 'dosen']:
@@ -116,7 +116,7 @@ def manajemen_peminjaman():
                 kuota = KUOTA_DOSEN if pengguna.peran == 'dosen' else KUOTA_MAHASISWA
                 
                 if peminjaman_aktif_count >= kuota:
-                    error_message = f'Kuota peminjaman penuh. {pengguna.get_nama_peran()} hanya boleh meminjam {kuota} buku.'
+                    error_message = f'Kuota peminjaman已满. {pengguna.peran.capitalize()} hanya boleh meminjam {kuota} buku.'
                 else:
                     # Hitung tanggal jatuh tempo
                     durasi = DURASI_DOSEN if pengguna.peran == 'dosen' else DURASI_MAHASISWA
@@ -137,7 +137,7 @@ def manajemen_peminjaman():
                     db.session.add(peminjaman_baru)
                     db.session.commit()
                     
-                    success_message = f'Berhasil meminjamkan "{buku_item.judul}" kepada {pengguna.nama_lengkap}. Jatuh tempo: {tgl_jatuh_tempo.strftime("%d %B %Y")}'
+                    success_message = f'Berhasil meminjamkan "{buku_item.judul}" kepada {pengguna.nama}. Jatuh tempo: {tgl_jatuh_tempo.strftime("%d %B %Y")}'
                     
                     # Refresh data
                     anggota = pengguna
@@ -225,7 +225,7 @@ def lunasi_denda(id):
     
     db.session.commit()
     
-    flash(f'Denda atas nama {peminjaman.peminjam.nama_lengkap} sebesar Rp{peminjaman.denda:,} telah dilunasi.', 'success')
+    flash(f'Denda atas nama {peminjaman.peminjam.nama} sebesar Rp{peminjaman.denda:,} telah dilunasi.', 'success')
     return redirect(url_for('staf.tagihan_denda'))
 
 

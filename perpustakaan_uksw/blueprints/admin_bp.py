@@ -18,8 +18,8 @@ def get_role_required():
 @login_required
 def dashboard():
     """Dashboard admin - pantauan umum perpustakaan"""
-    # Cek apakah user adalah super_petugas
-    if current_user.peran != 'super_petugas':
+    # Cek apakah user adalah admin
+    if current_user.peran != 'admin':
         flash('Anda tidak memiliki akses ke halaman ini.', 'error')
         return redirect(url_for('auth.login'))
     
@@ -53,7 +53,7 @@ def dashboard():
 @login_required
 def kelola_anggota():
     """Kelola data anggota (mahasiswa & dosen)"""
-    if current_user.peran != 'super_petugas':
+    if current_user.peran != 'admin':
         flash('Anda tidak memiliki akses ke halaman ini.', 'error')
         return redirect(url_for('auth.login'))
     
@@ -69,13 +69,13 @@ def kelola_anggota():
     if search_query:
         query = query.filter(
             db.or_(
-                Pengguna.nama_lengkap.ilike(f'%{search_query}%'),
-                Pengguna.nomor_induk.ilike(f'%{search_query}%'),
-                Pengguna.program_studi.ilike(f'%{search_query}%')
+                Pengguna.nama.ilike(f'%{search_query}%'),
+                Pengguna.nim_nip.ilike(f'%{search_query}%'),
+                Pengguna.prodi.ilike(f'%{search_query}%')
             )
         )
     
-    anggota_list = query.order_by(Pengguna.tanggal_dibuat.desc()).all()
+    anggota_list = query.order_by(Pengguna.created_at.desc()).all()
     
     return render_template('super_petugas/kelola_anggota.html',
                          anggota_list=anggota_list,
@@ -87,45 +87,43 @@ def kelola_anggota():
 @login_required
 def tambah_anggota():
     """Tambah anggota baru"""
-    if current_user.peran != 'super_petugas':
+    if current_user.peran != 'admin':
         flash('Anda tidak memiliki akses.', 'error')
         return redirect(url_for('admin.kelola_anggota'))
     
-    nomor_induk = request.form.get('nomor_induk')
-    nama_lengkap = request.form.get('nama_lengkap')
+    nim_nip = request.form.get('nim_nip')
+    nama = request.form.get('nama')
     email = request.form.get('email')
     password = request.form.get('password')
     peran = request.form.get('peran')
-    program_studi = request.form.get('program_studi')
-    fakultas = request.form.get('fakultas')
+    prodi = request.form.get('prodi')
     
     # Validasi
-    if not all([nomor_induk, nama_lengkap, email, password, peran]):
+    if not all([nim_nip, nama, email, password, peran]):
         flash('Semua field wajib diisi!', 'error')
         return redirect(url_for('admin.kelola_anggota'))
     
-    # Cek apakah Nomor Induk sudah ada
-    existing = Pengguna.query.filter_by(nomor_induk=nomor_induk).first()
+    # Cek apakah NIM/NIP sudah ada
+    existing = Pengguna.query.filter_by(nim_nip=nim_nip).first()
     if existing:
-        flash('Nomor Induk sudah terdaftar. Gunakan yang lain.', 'error')
+        flash('NIM/NIP sudah terdaftar. Gunakan yang lain.', 'error')
         return redirect(url_for('admin.kelola_anggota'))
     
     # Buat pengguna baru
     new_user = Pengguna(
-        nomor_induk=nomor_induk,
-        nama_lengkap=nama_lengkap,
+        nim_nip=nim_nip,
+        nama=nama,
         email=email,
         peran=peran,
-        program_studi=program_studi if peran in ['mahasiswa', 'dosen'] else None,
-        fakultas=fakultas if peran in ['mahasiswa', 'dosen'] else None,
-        status_aktif=True
+        prodi=prodi if peran in ['mahasiswa', 'dosen'] else None,
+        is_aktif=True
     )
     new_user.set_password(password)
     
     db.session.add(new_user)
     db.session.commit()
     
-    flash(f'Berhasil menambahkan {peran} baru: {nama_lengkap}', 'success')
+    flash(f'Berhasil menambahkan {peran} baru: {nama}', 'success')
     return redirect(url_for('admin.kelola_anggota'))
 
 
@@ -133,16 +131,15 @@ def tambah_anggota():
 @login_required
 def edit_anggota(id):
     """Edit data anggota"""
-    if current_user.peran != 'super_petugas':
+    if current_user.peran != 'admin':
         flash('Anda tidak memiliki akses.', 'error')
         return redirect(url_for('admin.kelola_anggota'))
     
     user = Pengguna.query.get_or_404(id)
     
-    user.nama_lengkap = request.form.get('nama_lengkap', user.nama_lengkap)
+    user.nama = request.form.get('nama', user.nama)
     user.email = request.form.get('email', user.email)
-    user.program_studi = request.form.get('program_studi', user.program_studi)
-    user.fakultas = request.form.get('fakultas', user.fakultas)
+    user.prodi = request.form.get('prodi', user.prodi)
     
     # Update password jika diisi
     new_password = request.form.get('password')
@@ -151,7 +148,7 @@ def edit_anggota(id):
     
     db.session.commit()
     
-    flash(f'Data {user.nama_lengkap} berhasil diperbarui.', 'success')
+    flash(f'Data {user.nama} berhasil diperbarui.', 'success')
     return redirect(url_for('admin.kelola_anggota'))
 
 
@@ -159,16 +156,16 @@ def edit_anggota(id):
 @login_required
 def nonaktifkan_anggota(id):
     """Nonaktifkan akun anggota"""
-    if current_user.peran != 'super_petugas':
+    if current_user.peran != 'admin':
         flash('Anda tidak memiliki akses.', 'error')
         return redirect(url_for('admin.kelola_anggota'))
     
     user = Pengguna.query.get_or_404(id)
-    user.status_aktif = False
+    user.is_aktif = False
     
     db.session.commit()
     
-    flash(f'Akun {user.nama_lengkap} telah dinonaktifkan.', 'warning')
+    flash(f'Akun {user.nama} telah dinonaktifkan.', 'warning')
     return redirect(url_for('admin.kelola_anggota'))
 
 
@@ -176,16 +173,16 @@ def nonaktifkan_anggota(id):
 @login_required
 def aktifkan_anggota(id):
     """Aktifkan kembali akun anggota"""
-    if current_user.peran != 'super_petugas':
+    if current_user.peran != 'admin':
         flash('Anda tidak memiliki akses.', 'error')
         return redirect(url_for('admin.kelola_anggota'))
     
     user = Pengguna.query.get_or_404(id)
-    user.status_aktif = True
+    user.is_aktif = True
     
     db.session.commit()
     
-    flash(f'Akun {user.nama_lengkap} telah diaktifkan kembali.', 'success')
+    flash(f'Akun {user.nama} telah diaktifkan kembali.', 'success')
     return redirect(url_for('admin.kelola_anggota'))
 
 
@@ -193,23 +190,23 @@ def aktifkan_anggota(id):
 @login_required
 def bantuan_sandi():
     """Reset password anggota yang lupa"""
-    if current_user.peran != 'super_petugas':
+    if current_user.peran != 'admin':
         flash('Anda tidak memiliki akses ke halaman ini.', 'error')
         return redirect(url_for('auth.login'))
     
     user_to_reset = None
     if request.method == 'POST':
-        nomor_induk = request.form.get('nomor_induk')
+        nim_nip = request.form.get('nim_nip')
         new_password = request.form.get('new_password')
         
-        user_to_reset = Pengguna.query.filter_by(nomor_induk=nomor_induk).first()
+        user_to_reset = Pengguna.query.filter_by(nim_nip=nim_nip).first()
         
         if user_to_reset and new_password:
             user_to_reset.set_password(new_password)
             db.session.commit()
-            flash(f'Password untuk {user_to_reset.nama_lengkap} berhasil direset.', 'success')
+            flash(f'Password untuk {user_to_reset.nama} berhasil direset.', 'success')
             return redirect(url_for('admin.bantuan_sandi'))
         elif not user_to_reset:
-            flash('Nomor Induk tidak ditemukan.', 'error')
+            flash('NIM/NIP tidak ditemukan.', 'error')
     
     return render_template('super_petugas/bantuan_sandi.html', user_to_reset=user_to_reset)
