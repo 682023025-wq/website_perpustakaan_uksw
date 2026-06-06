@@ -210,7 +210,49 @@ def reservasi_saya():
     """
     Daftar Reservasi Saya
     Status antrian: menunggu/siap_diambil/diambil/kadaluarsa/batal
+    Mendukung parameter GET: id_buku dan action=reservasi_from_katalog untuk reservasi langsung dari katalog
     """
+    # Handle reservasi via GET parameter dari katalog
+    if request.method == 'GET':
+        id_buku = request.args.get('id_buku', type=int)
+        action = request.args.get('action')
+        
+        if action == 'reservasi_from_katalog' and id_buku:
+            buku = Buku.query.get(id_buku)
+            
+            if not buku:
+                flash('Buku tidak ditemukan.', 'error')
+                return redirect(url_for('anggota.katalog'))
+            
+            # Cek apakah buku tersedia (jika tersedia, sebaiknya pinjam langsung)
+            if buku.stok_tersedia > 0:
+                flash('Buku ini tersedia. Silakan pinjam langsung di perpustakaan.', 'info')
+                return redirect(url_for('anggota.detail_buku', id=id_buku))
+            
+            # Cek apakah user sudah punya reservasi aktif untuk buku ini
+            existing = Reservasi.query.filter(
+                Reservasi.id_pemesan == current_user.id,
+                Reservasi.id_buku == id_buku,
+                Reservasi.status_antrian.in_(['menunggu', 'siap_diambil'])
+            ).first()
+            
+            if existing:
+                flash('Anda sudah memiliki reservasi aktif untuk buku ini.', 'warning')
+                return redirect(url_for('anggota.reservasi_saya'))
+            
+            # Buat reservasi baru
+            reservasi_baru = Reservasi(
+                id_pemesan=current_user.id,
+                id_buku=id_buku,
+                status_antrian='menunggu'
+            )
+            
+            db.session.add(reservasi_baru)
+            db.session.commit()
+            
+            flash(f'Reservasi berhasil! Anda akan mendapat notifikasi ketika buku "{buku.judul}" tersedia.', 'success')
+            return redirect(url_for('anggota.reservasi_saya'))
+    
     if request.method == 'POST':
         action = request.form.get('action')
 
