@@ -38,12 +38,16 @@ def dashboard():
         Peminjaman.tgl_pinjam.desc()
     ).limit(5).all()
     
+    # Hitung jumlah wishlist
+    wishlist_count = user.wishlist_items.count()
+    
     return render_template('anggota/dashboard.html',
                          user=user,
                          peminjaman_aktif=peminjaman_aktif,
                          kuota=kuota,
                          sisa_kuota=sisa_kuota,
                          reservasi_aktif=reservasi_aktif,
+                         wishlist_count=wishlist_count,
                          riwayat_terakhir=riwayat_terakhir)
 
 
@@ -82,12 +86,19 @@ def katalog():
     buku_list = query.order_by(Buku.judul).all()
     kategori_list = KategoriBuku.query.order_by(KategoriBuku.nama_kategori).all()
     
+    # Dapatkan daftar ID buku yang sudah di wishlist user
+    wishlist_buku_ids = set()
+    if current_user.is_authenticated:
+        wishlist_items = current_user.wishlist_items.all()
+        wishlist_buku_ids = {item.id_buku for item in wishlist_items}
+    
     return render_template('anggota/katalog.html',
                          buku_list=buku_list,
                          kategori_list=kategori_list,
                          search=search,
                          selected_kategori=kategori_id,
-                         selected_ketersediaan=ketersediaan)
+                         selected_ketersediaan=ketersediaan,
+                         wishlist_buku_ids=wishlist_buku_ids)
 
 
 @anggota_bp.route('/detail_buku/<int:id>')
