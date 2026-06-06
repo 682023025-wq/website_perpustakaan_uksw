@@ -351,6 +351,7 @@ def wishlist_action():
 def toggle_wishlist(id_buku):
     """
     Toggle wishlist: tambah jika belum ada, hapus jika sudah ada
+    Mencegah duplikasi dengan validasi ketat
     """
     buku = Buku.query.get_or_404(id_buku)
 
@@ -366,17 +367,26 @@ def toggle_wishlist(id_buku):
         db.session.commit()
         flash(f'Buku "{buku.judul}" dihapus dari wishlist.', 'info')
     else:
-        # Tambahkan ke wishlist
-        wishlist_baru = Wishlist(
+        # Validasi ganda untuk mencegah duplikasi (race condition)
+        existing_check = Wishlist.query.filter_by(
             id_anggota=current_user.id,
             id_buku=id_buku
-        )
-        db.session.add(wishlist_baru)
-        db.session.commit()
-        flash(f'Buku "{buku.judul}" berhasil ditambahkan ke wishlist!', 'success')
+        ).first()
+        
+        if not existing_check:
+            # Tambahkan ke wishlist
+            wishlist_baru = Wishlist(
+                id_anggota=current_user.id,
+                id_buku=id_buku
+            )
+            db.session.add(wishlist_baru)
+            db.session.commit()
+            flash(f'Buku "{buku.judul}" berhasil ditambahkan ke wishlist!', 'success')
+        else:
+            flash(f'Buku "{buku.judul}" sudah ada di wishlist.', 'info')
 
     # Redirect kembali ke halaman sebelumnya
-    next_page = request.form.get('next_page', request.referrer or 'anggota.katalog')
+    next_page = request.form.get('next_page', request.referrer or url_for('anggota.katalog'))
     return redirect(next_page)
 
 
