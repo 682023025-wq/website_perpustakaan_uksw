@@ -8,9 +8,13 @@ __pycache__/
 # Environment
 .venv/
 venv/
-.env
-.env.local
-*.env.*
+node_modules/
+dist/
+build/
+target/
+.gradle/
+.mypy_cache/
+.pytest_cache/
 
 # Logs
 *.log
