@@ -1,0 +1,1034 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - POS System{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}
+    <p class="text-muted mb-0">Ringkasan aktivitas sistem hari ini</p>
+{% endblock %}
+
+{% block content %}
+<!-- 
+  HALAMAN DASHBOARD UTAMA
+  Menampilkan ringkasan kinerja toko hari ini, grafik penjualan, riwayat transaksi, 
+  dan laporan yang bisa dicetak. Dirancang untuk penggunaan oleh admin maupun kasir.
+-->
+
+<style>
+    /* 
+      KONTAINER UTAMA DASHBOARD
+      Mengatur lebar penuh dengan padding kanan agar tidak terlalu menempel ke tepi.
+    */
+    .dashboard-container {
+        width: 100%;
+        max-width: 100%;
+        padding-right: 0.75rem;
+    }
+
+    /* 
+      KARTU KONTAINER (CARD)
+      Diatur tinggi tetap (50rem) agar tata letak konsisten. 
+      Menggunakan flexbox untuk mengatur header dan body secara vertikal.
+    */
+    .card {
+        height: 50rem;
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 0rem;
+    }
+
+    .card-header {
+        flex-shrink: 0; /* Header tidak boleh menyusut */
+    }
+
+    /* 
+      BODY KARTU
+      Mengisi ruang tersisa, memungkinkan scroll internal jika konten panjang.
+    */
+    .card-body {
+        flex: 1;
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* 
+      KARTU STATISTIK (RINGKASAN)
+      Tampilan ringkasan seperti "Total Produk", "Total Penjualan", dll.
+      Menggunakan latar belakang warna lembut dan efek hover halus.
+    */
+    .stat-card {
+        border: none;
+        box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s;
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 8.125rem; /* Tinggi minimum agar tampilan konsisten */
+    }
+
+    .stat-card:hover {
+        transform: translateY(-0.125rem);
+        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+    }
+
+    /* Gaya teks di dalam kartu statistik */
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #333;
+        margin: 0.2rem 0;
+        line-height: 1.2;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-bottom: 0.25rem;
+    }
+
+    /* Ikon di pojok kanan atas kartu (transparan) */
+    .stat-icon {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        font-size: 1.375rem;
+        opacity: 0.25;
+    }
+
+    /* Warna latar belakang lembut untuk tiap jenis kartu */
+    .bg-light-primary { background-color: #e6f0ff !important; }
+    .bg-light-success { background-color: #ecf8f2 !important; }
+    .bg-light-info    { background-color: #e3f2fd !important; }
+    .bg-light-warning { background-color: #fff9e6 !important; }
+
+    /* 
+      TAB NAVIGASI DALAM KARTU
+      Digunakan untuk beralih antara Dashboard, Riwayat, dan Laporan.
+    */
+    .nav-tabs {
+        flex-shrink: 0;
+        margin-bottom: 1rem;
+    }
+
+    /* 
+      GRUP FILTER
+      Menampung dropdown tahun dan bulan untuk memilih periode data.
+    */
+    .filter-group {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .filter-group label {
+        font-size: 0.9375rem;
+        white-space: nowrap;
+        margin-bottom: 0;
+    }
+
+    /* Styling dropdown agar lebih ramping dan konsisten */
+    .form-select {
+        font-size: 0.875rem !important;
+        padding: 0.375rem 0.75rem !important;
+        border-radius: 0.375rem !important;
+        border: 1px solid #ced4da;
+    }
+
+    /* Ukuran teks kecil (seperti keterangan stok rendah) */
+    .text-muted, small {
+        font-size: 0.875rem !important;
+    }
+
+    /* 
+      GRAFIK PENJUALAN
+      Menggunakan Chart.js, diatur agar responsif dan tidak memakan terlalu banyak ruang.
+    */
+    #salesChart {
+        width: 100%;
+        height: auto;
+        max-height: 80%;
+        display: block;
+    }
+
+    /* 
+      KONTAINER TABEL
+      Memungkinkan scroll horizontal/vertikal jika data melebihi tinggi maksimum.
+      Termasuk styling scrollbar khusus.
+    */
+    .table-container {
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 33rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.375rem rgba(0,0,0,0.05);
+        scrollbar-width: thin;
+        scrollbar-color: #c1c1c1 #f1f1f1;
+    }
+
+    /* Tinggi maksimum berbeda untuk tiap konteks */
+    .history-table-container { max-height: 34rem; }
+    .report-table-container { max-height: 22rem; }
+
+    /* Styling scrollbar di browser berbasis WebKit (Chrome, Edge, dll) */
+    .table-container::-webkit-scrollbar {
+        width: 0.375rem;
+    }
+    .table-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 0.25rem;
+    }
+    .table-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 0.25rem;
+    }
+
+    /* 
+      HEADER TABEL YANG STICKY
+      Tetap di atas saat pengguna scroll ke bawah.
+    */
+    .table-container thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 10;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    /* Lebar minimum tabel agar tidak terlalu sempit */
+    .table-container table {
+        min-width: 40rem;
+        width: 100%;
+        font-size: 0.92rem;
+    }
+
+    /* 
+      SORTING KOLOM
+      Kolom dengan kelas "sortable" bisa diklik untuk mengurutkan data.
+      Tanda panah ditampilkan di sebelah kanan label kolom.
+    */
+    th.sortable {
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+        white-space: nowrap;
+        padding-right: 1.5rem;
+    }
+
+    th.sortable::after {
+        content: "↕";
+        position: absolute;
+        right: 0.5rem;
+        opacity: 0.4;
+        font-size: 0.8rem;
+    }
+
+    th.sortable.asc::after {
+        content: "↑";
+        opacity: 1;
+        color: #0d6efd;
+    }
+
+    th.sortable.desc::after {
+        content: "↓";
+        opacity: 1;
+        color: #0d6efd;
+    }
+
+    /* Pesan saat tidak ada data */
+    .no-data {
+        text-align: center;
+        color: #6c757d;
+        padding: 1.5rem;
+        font-size: 0.9rem;
+    }
+
+    /* 
+      KONTROL PENCARIAN
+      Menggabungkan input teks dan tombol reset dalam satu baris.
+    */
+    .search-controls {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .search-controls .input-group {
+        flex: 1;
+        min-width: 17.5rem;
+    }
+
+    /* 
+      HEADER LAPORAN (saat cetak)
+      Tampilan judul laporan yang muncul di atas data saat dicetak.
+    */
+    .report-header {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    /* 
+      RINGKASAN LAPORAN
+      Menampilkan total transaksi, pendapatan, dll dalam bentuk grid.
+    */
+    .report-summary {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.9375rem;
+        flex-shrink: 0;
+    }
+
+    .summary-item {
+        background: #f8f9fa;
+        padding: 0.75rem;
+        border-radius: 0.375rem;
+        text-align: center;
+    }
+
+    /* 
+      KONTEN TAB
+      Hanya tab aktif yang ditampilkan (display: flex), lainnya disembunyikan.
+    */
+    .tab-content {
+        display: none;
+        flex: 1;
+        flex-direction: column;
+    }
+    .tab-content.active {
+        display: flex;
+    }
+
+    /* 
+      TOMBOL CETAK LAPORAN
+      Ditempatkan di dalam grup filter laporan, berwarna gelap, bisa dipakai semua pengguna.
+    */
+    #print-report {
+        min-width: 10rem;
+        background: #212529;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        font-size: 0.9375rem;
+        white-space: nowrap;
+    }
+    #print-report:hover {
+        opacity: 0.9;
+    }
+
+    /* 
+      GAYA SAAT DICETAK (PRINT MEDIA)
+      Menyembunyikan semua elemen UI yang tidak perlu (sidebar, tombol, dll),
+      hanya menampilkan konten laporan dalam format A4 landscape.
+    */
+    @media print {
+        @page {
+            size: A4 landscape;
+            margin: 1.5rem;
+        }
+
+        /* Sembunyikan semua elemen kecuali konten laporan */
+        body * {
+            visibility: hidden;
+        }
+
+        #report-content,
+        #report-content * {
+            visibility: visible;
+        }
+
+        #report-content {
+            position: static !important;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 0.875rem;
+            line-height: 1.4;
+            background: white !important;
+            color: black !important;
+        }
+
+        /* Gaya header laporan saat dicetak */
+        .report-header h3 {
+            font-size: 1rem;
+            margin: 0 0 0.375rem;
+            color: #000;
+        }
+        .report-header p {
+            font-size: 0.875rem;
+            color: #000;
+            margin: 0.25rem 0;
+        }
+
+        /* Ringkasan dalam bentuk grid 4 kolom */
+        .report-summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 0.9375rem;
+        }
+        .summary-item {
+            background: none !important;
+            border: 1px solid #999;
+            padding: 0.3125rem;
+            font-size: 0.8125rem;
+            text-align: center;
+        }
+
+        /* Tabel laporan saat dicetak */
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8125rem;
+            table-layout: fixed;
+        }
+        .report-table th,
+        .report-table td {
+            border: 1px solid #000 !important;
+            padding: 0.375rem !important;
+            text-align: left;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+        .report-table th {
+            background: none !important;
+            color: #000 !important;
+            font-weight: bold;
+        }
+
+        .report-table tr {
+            page-break-inside: avoid; /* Hindari potong baris di tengah halaman */
+        }
+
+        /* Nonaktifkan efek scroll dan bayangan saat cetak */
+        .table-container {
+            overflow: visible !important;
+            max-height: none !important;
+            box-shadow: none !important;
+        }
+        .table-container table {
+            min-width: auto !important;
+        }
+
+        /* Sembunyikan semua elemen UI yang tidak perlu saat cetak */
+        .no-print, .card-header, .nav-tabs, .filter-group, .btn, .stat-card, .row-cards, .sidebar, .navbar, .footer,
+        .search-controls {
+            display: none !important;
+        }
+    }
+
+    /* 
+      RESPONSIF UNTUK LAYAR SANGAT KECIL (HP)
+      Mengubah tata letak filter menjadi vertikal agar muat.
+    */
+    @media (max-width: 36rem) {
+        .filter-group {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .filter-group > * {
+            width: 100% !important;
+        }
+        .stat-card {
+            min-height: 7.5rem;
+            padding: 1rem;
+        }
+        .stat-value { font-size: 1.3125rem; }
+        .stat-label { font-size: 0.8125rem; }
+    }
+</style>
+
+<div class="dashboard-container">
+    <!-- 
+      RINGKASAN STATISTIK HARI INI
+      Menampilkan 4 kartu: Total Produk, Total Penjualan, Transaksi Hari Ini, dan Jumlah Karyawan.
+      Data diisi dari variabel Flask (misal: {{ total_products }}, {{ total_revenue }}, dll).
+    -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-3 mb-4 row-cards">
+        <div class="col">
+            <div class="stat-card bg-light-primary h-100">
+                <div class="stat-icon"><i class="fas fa-boxes"></i></div>
+                <div class="stat-label">Total Produk</div>
+                <div class="stat-value">{{ total_products }}</div>
+                {% if low_stock > 0 %}
+                    <small class="text-danger mt-1 d-block">{{ low_stock }} stok rendah</small>
+                {% else %}
+                    <small class="text-muted mt-1 d-block">Stok aman</small>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col">
+            <div class="stat-card bg-light-success h-100">
+                <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+                <div class="stat-label">Total Penjualan</div>
+                <div class="stat-value">Rp {{ "{:,}".format(total_revenue) }}</div>
+                <small class="text-muted mt-1 d-block">{{ total_transactions }} transaksi</small>
+            </div>
+        </div>
+        <div class="col">
+            <div class="stat-card bg-light-info h-100">
+                <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                <div class="stat-label">Transaksi Hari Ini</div>
+                <div class="stat-value">{{ total_transactions }}</div>
+                {% if total_transactions > 0 %}
+                    <small class="text-muted mt-1 d-block">Rata-rata: Rp {{ "{:,}".format(total_revenue // total_transactions) }}</small>
+                {% else %}
+                    <small class="text-muted mt-1 d-block">Rata-rata: Rp 0</small>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col">
+            <div class="stat-card bg-light-warning h-100">
+                <div class="stat-icon"><i class="fas fa-users"></i></div>
+                <div class="stat-label">Karyawan</div>
+                <div class="stat-value">{{ total_employees }}</div>
+                <small class="text-muted mt-1 d-block">Total karyawan</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 
+      KARTU UTAMA DENGAN TAB
+      Berisi tiga tab: Dashboard (grafik), Riwayat (tabel transaksi), dan Laporan (preview + cetak).
+    -->
+    <div class="card">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" data-tab="dashboard-tab">
+                        <i class="fas fa-home me-1"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab="history-tab">
+                        <i class="fas fa-history me-1"></i> Riwayat
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab="report-tab">
+                        <i class="fas fa-file-alt me-1"></i> Laporan
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+
+            <!-- TAB: DASHBOARD (GRAFIK PENJUALAN) -->
+            <div id="dashboard-tab" class="tab-content active">
+                <h5 class="mb-3"><i class="fas fa-chart-bar me-1"></i> Grafik Penjualan</h5>
+                <div class="filter-group mb-3">
+                    <label for="chart-year">Tahun:</label>
+                    <select id="chart-year" class="form-select form-select-sm"></select>
+                    <label for="chart-month">Bulan:</label>
+                    <select id="chart-month" class="form-select form-select-sm"></select>
+                </div>
+                <canvas id="salesChart"></canvas>
+            </div>
+
+            <!-- TAB: RIWAYAT (TABEL TRANSAKSI) -->
+            <div id="history-tab" class="tab-content">
+                <div class="history-controls">
+                    <h5 class="mb-3"><i class="fas fa-list me-1"></i> Riwayat Transaksi</h5>
+                    <div class="filter-group mb-3">
+                        <label for="history-year">Tahun:</label>
+                        <select id="history-year" class="form-select form-select-sm"></select>
+                        <label for="history-month">Bulan:</label>
+                        <select id="history-month" class="form-select form-select-sm"></select>
+                    </div>
+                    <div class="search-controls">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                            <input type="text" class="form-control border-start-0" id="history-search" placeholder="Cari: Tanggal, Kasir, atau Total">
+                        </div>
+                        <button class="btn btn-outline-secondary" id="reset-history-search">Reset</button>
+                    </div>
+                </div>
+                <div class="table-container history-table-container">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="sortable" data-sort="tanggal">Tanggal</th>
+                                <th class="sortable" data-sort="kasir">Kasir</th>
+                                <th class="sortable" data-sort="total">Total</th>
+                                <th class="sortable" data-sort="item">Item</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body"></tbody>
+                    </table>
+                    <div id="history-no-data" class="no-data" style="display:none;">Tidak ada transaksi.</div>
+                </div>
+            </div>
+
+            <!-- TAB: LAPORAN (PREVIEW DAN CETAK) -->
+            <div id="report-tab" class="tab-content">
+                <div class="no-print report-controls">
+                    <h5 class="mb-3"><i class="fas fa-file-alt me-1"></i> Preview Laporan Penjualan</h5>
+                    <div class="filter-group mb-3">
+                        <label for="report-year">Tahun:</label>
+                        <select id="report-year" class="form-select form-select-sm"></select>
+                        <label for="report-month">Bulan:</label>
+                        <select id="report-month" class="form-select form-select-sm"></select>
+                        <!-- TOMBOL CETAK DITAMPILKAN UNTUK SEMUA PERAN (KASIR & ADMIN) -->
+                        <button id="print-report" class="btn btn-primary btn-sm">
+                            <i class="fas fa-print me-1"></i> Cetak Laporan
+                        </button>
+                    </div>
+                    <div class="search-controls">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                            <input type="text" class="form-control border-start-0" id="report-search" placeholder="Cari: Tanggal, Kasir, atau Total">
+                        </div>
+                        <button class="btn btn-outline-secondary" id="reset-report-search">Reset</button>
+                    </div>
+                </div>
+                <!-- KONTEN YANG AKAN DICETAK -->
+                <div class="report-scrollable">
+                    <div id="report-content">
+                        <div class="report-header">
+                            <h3>LAPORAN PENJUALAN</h3>
+                            <p id="report-period" class="text-muted">Periode: Januari 2025</p>
+                            <p id="report-print-date" class="text-muted">Dicetak pada: {{ now.strftime('%d %B %Y') }}</p>
+                        </div>
+                        <div class="report-summary" id="report-summary"></div>
+                        <div class="table-container report-table-container">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="sortable" data-sort="tanggal">Tanggal & Waktu</th>
+                                        <th class="sortable" data-sort="kasir">Kasir</th>
+                                        <th class="sortable" data-sort="total">Total</th>
+                                        <th class="sortable" data-sort="item">Jumlah Item</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="report-table-body"></tbody>
+                            </table>
+                            <div id="report-no-data" class="no-data" style="display:none;">Tidak ada data untuk periode ini.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- 
+  SCRIPT JAVASCRIPT
+  Mengelola interaksi pengguna: navigasi tab, loading data dari API, grafik, pencarian, sorting, dan cetak.
+-->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Inisialisasi tanggal saat ini
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    const monthNames = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+    // Fungsi untuk mengurutkan data (numerik atau teks)
+    function createSortFunction(key, dir = 'asc') {
+        return (a, b) => {
+            let valA = a[key] ?? 0;
+            let valB = b[key] ?? 0;
+
+            const numA = typeof valA === 'number' ? valA : parseFloat(valA);
+            const numB = typeof valB === 'number' ? valB : parseFloat(valB);
+
+            const isNumA = !isNaN(numA) && isFinite(numA);
+            const isNumB = !isNaN(numB) && isFinite(numB);
+
+            if (isNumA && isNumB) {
+                if (numA < numB) return dir === 'asc' ? -1 : 1;
+                if (numA > numB) return dir === 'asc' ? 1 : -1;
+                return 0;
+            } else {
+                const strA = String(valA).toLowerCase();
+                const strB = String(valB).toLowerCase();
+                if (strA < strB) return dir === 'asc' ? -1 : 1;
+                if (strA > strB) return dir === 'asc' ? 1 : -1;
+                return 0;
+            }
+        };
+    }
+
+    // ========== NAVIGASI TAB ==========
+    const tabLinks = document.querySelectorAll('.nav-link[data-tab]');
+    tabLinks.forEach(link => {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = this.getAttribute('data-tab');
+            
+            // Aktifkan tab yang diklik, nonaktifkan lainnya
+            tabLinks.forEach(l => l.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Tampilkan konten tab yang sesuai
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            const targetEl = document.getElementById(target);
+            if (targetEl) targetEl.classList.add('active');
+            
+            // Muat data laporan hanya saat pertama kali tab dibuka
+            if (target === 'report-tab' && !window.reportLoaded) {
+                loadReportData(currentYear, currentMonth);
+                window.reportLoaded = true;
+            }
+            // Refresh grafik saat kembali ke tab dashboard
+            if (target === 'dashboard-tab') {
+                setTimeout(() => {
+                    const year = document.getElementById('chart-year').value;
+                    const month = document.getElementById('chart-month').value;
+                    loadChartData(year, month);
+                }, 50);
+            }
+        });
+    });
+
+    // ========== CHART PENJUALAN ==========
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    let salesChart = null;
+
+    // Inisialisasi dropdown tahun dan bulan dari API
+    function initChartFilters() {
+        fetch('/api/sales/years')
+            .then(res => res.json())
+            .then(years => {
+                ['chart', 'history', 'report'].forEach(type => {
+                    const yearSel = document.getElementById(`${type}-year`);
+                    const monthSel = document.getElementById(`${type}-month`);
+                    if (!yearSel) return;
+                    yearSel.innerHTML = '';
+                    years.forEach(year => {
+                        const opt = document.createElement('option');
+                        opt.value = year;
+                        opt.textContent = year;
+                        if (year == currentYear) opt.selected = true;
+                        yearSel.appendChild(opt);
+                    });
+                    loadMonthsForSelect(monthSel, currentYear, type === 'report');
+                });
+            });
+    }
+
+    // Isi dropdown bulan sesuai tahun yang dipilih
+    function loadMonthsForSelect(select, year, isReport = false) {
+        if (!select) return;
+        select.innerHTML = '';
+        const limitToCurrent = (year == currentYear) && !isReport;
+        const maxMonth = limitToCurrent ? currentMonth : 12;
+        for (let m = 1; m <= maxMonth; m++) {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = monthNames[m];
+            if (m == currentMonth) opt.selected = true;
+            select.appendChild(opt);
+        }
+    }
+
+    // Muat dan tampilkan data grafik harian
+    function loadChartData(year, month) {
+        fetch(`/api/sales/daily?year=${year}&month=${month}`)
+            .then(res => res.json())
+            .then(data => {
+                if (salesChart) salesChart.destroy();
+                const salesValues = (data.sales || []).map(val => Number(val) || 0);
+                const labels = data.labels || [];
+                salesChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Pendapatan Harian (Rp)',
+                            data: salesValues,
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return 'Rp ' + value.toLocaleString();
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: true },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Penjualan: Rp ' + context.parsed.y.toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+    }
+
+    // ========== RIWAYAT TRANSAKSI ==========
+    let historyDataCache = [];
+    let currentHistorySort = { key: null, dir: 'asc' };
+
+    // Muat data riwayat dari API
+    function loadHistoryData(year, month) {
+        fetch(`/api/sales/history?year=${year}&month=${month}`)
+            .then(res => res.json())
+            .then(sales => {
+                // Simpan data asli + versi siap-sort
+                historyDataCache = sales.map(s => ({
+                    ...s,
+                    tanggal_sort: s.tanggal_formatted || '',
+                    kasir_sort: s.kasirNama || '',
+                    total_sort: Number(s.total) || 0,
+                    item_sort: Array.isArray(s.items) ? s.items.length : 0
+                }));
+                applyHistoryFilterAndSort();
+            });
+    }
+
+    // Terapkan filter pencarian dan urutkan data riwayat
+    function applyHistoryFilterAndSort() {
+        const searchTerm = (document.getElementById('history-search')?.value || '').toLowerCase();
+        let filtered = historyDataCache.filter(s => {
+            return (
+                s.tanggal_sort.toLowerCase().includes(searchTerm) ||
+                s.kasir_sort.toLowerCase().includes(searchTerm) ||
+                s.total_sort.toString().includes(searchTerm) ||
+                s.item_sort.toString().includes(searchTerm)
+            );
+        });
+
+        if (currentHistorySort.key) {
+            const sortKeyMap = {
+                tanggal: 'tanggal_sort',
+                kasir: 'kasir_sort',
+                total: 'total_sort',
+                item: 'item_sort'
+            };
+            const actualKey = sortKeyMap[currentHistorySort.key];
+            filtered.sort(createSortFunction(actualKey, currentHistorySort.dir));
+        }
+
+        // Render ulang tabel
+        const body = document.getElementById('history-table-body');
+        const noData = document.getElementById('history-no-data');
+        body.innerHTML = '';
+
+        if (filtered.length === 0) {
+            noData.style.display = 'block';
+        } else {
+            noData.style.display = 'none';
+            filtered.forEach(s => {
+                const row = `<tr>
+                    <td>${s.tanggal_formatted || '—'}</td>
+                    <td>${s.kasirNama || '—'}</td>
+                    <td>Rp ${Number(s.total || 0).toLocaleString()}</td>
+                    <td>${Array.isArray(s.items) ? s.items.length : 0}</td>
+                </tr>`;
+                body.insertAdjacentHTML('beforeend', row);
+            });
+        }
+    }
+
+    // ========== LAPORAN ==========
+    let reportDataCache = [];
+    let currentReportSort = { key: null, dir: 'asc' };
+
+    // Muat data laporan dan tampilkan ringkasan
+    function loadReportData(year, month) {
+        const period = document.getElementById('report-period');
+        const printDate = document.getElementById('report-print-date');
+        period.textContent = `Periode: ${monthNames[month]} ${year}`;
+        printDate.textContent = `Dicetak pada: ${now.toLocaleDateString('id-ID')}`;
+
+        fetch(`/api/sales/history?year=${year}&month=${month}`)
+            .then(res => res.json())
+            .then(sales => {
+                reportDataCache = sales.map(s => ({
+                    ...s,
+                    tanggal_sort: s.tanggal_formatted || '',
+                    kasir_sort: s.kasirNama || '',
+                    total_sort: Number(s.total) || 0,
+                    item_sort: Array.isArray(s.items) ? s.items.length : 0
+                }));
+
+                const summary = document.getElementById('report-summary');
+                summary.innerHTML = '';
+                if (sales.length === 0) return;
+
+                // Hitung ringkasan laporan
+                let totalRevenue = 0;
+                let totalTransactions = sales.length;
+                let totalItems = 0;
+                const kasirSet = new Set();
+
+                sales.forEach(s => {
+                    totalRevenue += Number(s.total) || 0;
+                    kasirSet.add(s.kasirNama);
+                    if (Array.isArray(s.items)) totalItems += s.items.length;
+                });
+
+                summary.innerHTML = `
+                    <div class="summary-item">Total Transaksi: ${totalTransactions}</div>
+                    <div class="summary-item">Total Pendapatan: Rp ${totalRevenue.toLocaleString()}</div>
+                    <div class="summary-item">Total Item Terjual: ${totalItems}</div>
+                    <div class="summary-item">Jumlah Kasir: ${kasirSet.size}</div>
+                `;
+
+                applyReportFilterAndSort();
+            });
+    }
+
+    // Terapkan filter dan sorting untuk laporan
+    function applyReportFilterAndSort() {
+        const searchTerm = (document.getElementById('report-search')?.value || '').toLowerCase();
+        let filtered = reportDataCache.filter(s => {
+            return (
+                s.tanggal_sort.toLowerCase().includes(searchTerm) ||
+                s.kasir_sort.toLowerCase().includes(searchTerm) ||
+                s.total_sort.toString().includes(searchTerm) ||
+                s.item_sort.toString().includes(searchTerm)
+            );
+        });
+
+        if (currentReportSort.key) {
+            const sortKeyMap = {
+                tanggal: 'tanggal_sort',
+                kasir: 'kasir_sort',
+                total: 'total_sort',
+                item: 'item_sort'
+            };
+            const actualKey = sortKeyMap[currentReportSort.key];
+            filtered.sort(createSortFunction(actualKey, currentReportSort.dir));
+        }
+
+        // Render ulang tabel laporan
+        const body = document.getElementById('report-table-body');
+        const noData = document.getElementById('report-no-data');
+        body.innerHTML = '';
+
+        if (filtered.length === 0) {
+            noData.style.display = 'block';
+        } else {
+            noData.style.display = 'none';
+            filtered.forEach(s => {
+                const row = `<tr>
+                    <td>${s.tanggal_formatted || '—'}</td>
+                    <td>${s.kasirNama || '—'}</td>
+                    <td>Rp ${Number(s.total || 0).toLocaleString()}</td>
+                    <td>${Array.isArray(s.items) ? s.items.length : 0}</td>
+                </tr>`;
+                body.insertAdjacentHTML('beforeend', row);
+            });
+        }
+    }
+
+    // ========== FUNGSI SORTING ==========
+    // Pasang event listener untuk kolom yang bisa di-sort
+    document.querySelectorAll('#history-tab .sortable').forEach(th => {
+        th.addEventListener('click', function () {
+            const key = this.dataset.sort;
+            if (currentHistorySort.key === key) {
+                currentHistorySort.dir = currentHistorySort.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentHistorySort.key = key;
+                currentHistorySort.dir = 'asc';
+            }
+            document.querySelectorAll('#history-tab .sortable').forEach(el => {
+                el.classList.remove('asc', 'desc');
+            });
+            this.classList.add(currentHistorySort.dir);
+            applyHistoryFilterAndSort();
+        });
+    });
+
+    document.querySelectorAll('#report-tab .sortable').forEach(th => {
+        th.addEventListener('click', function () {
+            const key = this.dataset.sort;
+            if (currentReportSort.key === key) {
+                currentReportSort.dir = currentReportSort.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentReportSort.key = key;
+                currentReportSort.dir = 'asc';
+            }
+            document.querySelectorAll('#report-tab .sortable').forEach(el => {
+                el.classList.remove('asc', 'desc');
+            });
+            this.classList.add(currentReportSort.dir);
+            applyReportFilterAndSort();
+        });
+    });
+
+    // ========== PENCARIAN DAN RESET ==========
+    document.getElementById('history-search')?.addEventListener('input', applyHistoryFilterAndSort);
+    document.getElementById('reset-history-search')?.addEventListener('click', () => {
+        document.getElementById('history-search').value = '';
+        applyHistoryFilterAndSort();
+    });
+
+    document.getElementById('report-search')?.addEventListener('input', applyReportFilterAndSort);
+    document.getElementById('reset-report-search')?.addEventListener('click', () => {
+        document.getElementById('report-search').value = '';
+        applyReportFilterAndSort();
+    });
+
+    // ========== PERUBAHAN FILTER TAHUN/BULAN ==========
+    ['chart', 'history', 'report'].forEach(type => {
+        const yearSel = document.getElementById(`${type}-year`);
+        const monthSel = document.getElementById(`${type}-month`);
+        if (yearSel) {
+            yearSel.addEventListener('change', function () {
+                const year = this.value;
+                loadMonthsForSelect(monthSel, year, type === 'report');
+                if (type === 'chart') loadChartData(year, monthSel.value);
+                else if (type === 'history') loadHistoryData(year, monthSel.value);
+                else if (type === 'report') loadReportData(year, monthSel.value);
+            });
+        }
+        if (monthSel) {
+            monthSel.addEventListener('change', function () {
+                const year = document.getElementById(`${type}-year`).value;
+                if (type === 'chart') loadChartData(year, this.value);
+                else if (type === 'history') loadHistoryData(year, this.value);
+                else if (type === 'report') loadReportData(year, this.value);
+            });
+        }
+    });
+
+    // ========== CETAK LAPORAN ==========
+    document.getElementById('print-report')?.addEventListener('click', function () {
+        window.print();
+    });
+
+    // ========== INISIALISASI AWAL ==========
+    initChartFilters();
+    loadChartData(currentYear, currentMonth);
+    loadHistoryData(currentYear, currentMonth);
+});
+</script>
+{% endblock %}

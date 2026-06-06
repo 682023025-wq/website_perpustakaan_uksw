@@ -1,0 +1,703 @@
+{% extends "base.html" %} {% block title %}Penjualan - POS System{% endblock %}
+{% block page_title %}Penjualan{% endblock %} {% block page_subtitle %}
+<p class="text-muted mb-0">
+  Lakukan transaksi penjualan dengan cepat dan akurat
+</p>
+{% endblock %} {% block content %}
+<!--
+  HALAMAN PENJUALAN (KASIR)
+  Antarmuka utama untuk mencatat transaksi penjualan.
+  Terdiri dari tiga bagian utama:
+    1. Daftar produk aktif dengan stok > 0
+    2. Keranjang belanja (dengan kontrol kuantitas)
+    3. Form pembayaran dan proses checkout
+  Dirancang untuk kecepatan dan akurasi: klik produk → atur jumlah → masukkan uang → selesai.
+-->
+
+<style>
+  /* 
+    Kontainer utama halaman — memastikan lebar penuh tanpa overflow horizontal.
+  */
+  .sales-container {
+    width: 100%;
+    max-width: 100%;
+    padding-right: 0.75rem;
+  }
+
+  /* 
+    LAYOUT UTAMA: DUA KOLOM (PRODUK + KERANJANG/PEMBAYARAN)
+    Menggunakan flexbox dengan rasio 2:1 untuk ruang produk lebih luas.
+    Tinggi maksimum dikontrol agar tidak melebihi viewport.
+  */
+  .sales-layout {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 0;
+    height: 100%;
+  }
+
+  .product-section {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    max-height: 41rem;
+  }
+
+  .right-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-height: 41rem;
+  }
+
+  /* 
+    KARTU SEKSI (PRODUK, KERANJANG, PEMBAYARAN)
+    Desain konsisten dengan latar putih, bayangan halus, dan border-radius.
+  */
+  .section-card {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    height: 100%;
+  }
+
+  .section-card .card-header {
+    padding: 0.75rem;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .section-card .card-body {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* 
+    DAFTAR PRODUK
+    Grid responsif yang menyesuaikan jumlah kolom berdasarkan lebar layar.
+    Scroll internal jika produk melebihi tinggi maksimum.
+  */
+  .product-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: 1rem;
+    overflow-y: auto;
+    padding: 1rem;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .product-item {
+    transition: transform 0.2s ease;
+  }
+
+  .product-item:hover {
+    transform: translateY(-0.125rem);
+  }
+
+  /* 
+    KARTU PRODUK
+    Menampilkan ID, nama, stok, dan harga.
+    Klik pada kartu akan menambahkan produk ke keranjang.
+  */
+  .product-card {
+    border: none;
+    cursor: pointer;
+    padding: 0.6rem;
+    border-radius: 0.5rem;
+    background: #f8f9fa;
+  }
+
+  .product-card:hover {
+    background: #e9ecef;
+  }
+
+  .product-card .text-muted {
+    font-size: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .product-card .fw-bold {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+  }
+
+  .product-card .text-success,
+  .product-card .text-danger {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  /* 
+    KARTU KERANJANG
+    Tinggi tetap agar tata letak konsisten.
+  */
+  .cart-card {
+    height: 26rem;
+  }
+
+  /* 
+    KONTEN KERANJANG
+    Scroll internal jika item melebihi tinggi maksimum.
+  */
+  .cart-content {
+    overflow-y: auto;
+    flex: 1;
+    margin-top: 0.5rem;
+    padding-right: 0.5rem;
+    min-height: 0;
+  }
+
+  .cart-item {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid #eee;
+  }
+
+  /* 
+    TOTAL KERANJANG
+    Teks tebal dan berwarna gelap untuk penekanan.
+  */
+  .cart-total {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #2c3e50;
+  }
+
+  /* 
+    KARTU PEMBAYARAN
+    Tinggi tetap, fokus pada input uang dan tombol checkout.
+  */
+  .payment-card {
+    height: 20rem;
+  }
+
+  .payment-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  /* 
+    INPUT PEMBAYARAN
+    Rata kanan untuk meniru mesin kasir nyata.
+  */
+  .payment-input {
+    width: 100%;
+    padding: 0.6rem;
+    font-size: 1rem;
+    text-align: right;
+    border: 1px solid #ced4da;
+    border-radius: 0.5rem;
+  }
+
+  /* 
+    KONTROL KUANTITAS DI KERANJANG
+    Tombol +/- dan input angka untuk menyesuaikan jumlah item.
+  */
+  .qty-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.3rem;
+  }
+
+  .qty-input {
+    width: 5rem !important;
+    text-align: center;
+    padding: 0.25rem !important;
+    font-size: 0.9rem !important;
+    border: 1px solid #ddd;
+    border-radius: 0.25rem;
+  }
+
+  .qty-btn {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* 
+    RESPONSIF: LAYAR KECIL (<992px)
+    Mengubah layout menjadi vertikal (produk → keranjang → pembayaran).
+    Menyesuaikan tinggi maksimum untuk mencegah scroll berlebihan.
+  */
+  @media (max-width: 991px) {
+    .sales-layout {
+      flex-direction: column;
+      height: auto;
+    }
+    .cart-card,
+    .payment-card {
+      height: auto;
+    }
+    .cart-content {
+      max-height: 20rem;
+    }
+    .product-list {
+      grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    }
+  }
+</style>
+
+<div class="sales-container">
+  <div class="sales-layout">
+    <!-- 
+      BAGIAN KIRI: DAFTAR PRODUK
+      Hanya menampilkan produk aktif dengan stok > 0.
+      Dilengkapi pencarian berdasarkan ID atau nama.
+    -->
+    <div class="product-section">
+      <div class="section-card">
+        <div
+          class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+        >
+          <h5 class="mb-0"><i class="fas fa-boxes me-2"></i> Pilih Produk</h5>
+        </div>
+        <div class="card-body">
+          <div class="input-group mb-3">
+            <span class="input-group-text bg-white border-end-0">
+              <i class="fas fa-search text-muted"></i>
+            </span>
+            <input
+              type="text"
+              class="form-control border-start-0"
+              id="searchProduct"
+              placeholder="Cari: ID, Nama"
+            />
+          </div>
+          <div class="product-list" id="productGrid">
+            <div class="text-center text-muted py-4">Memuat produk...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 
+      BAGIAN KANAN: KERANJANG + PEMBAYARAN
+    -->
+    <div class="right-section">
+      <!-- 
+        KERANJANG BELANJA
+        Menampilkan item yang dipilih, subtotal per item, dan total keseluruhan.
+        Dilengkapi tombol "Kosongkan" dan kontrol kuantitas.
+      -->
+      <div class="section-card cart-card">
+        <div
+          class="card-header bg-success text-white d-flex justify-content-between align-items-center"
+        >
+          <h5 class="mb-0">
+            <i class="fas fa-shopping-cart me-2"></i> Keranjang
+          </h5>
+          <button class="btn btn-sm btn-light" id="clearCartBtn">
+            <i class="fas fa-trash me-1"></i> Kosongkan
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="cart-content" id="cartItems">
+            <div class="text-center text-muted my-5">Keranjang kosong</div>
+          </div>
+          <div class="mt-3 pt-3 border-top">
+            <div class="d-flex justify-content-between mb-2">
+              <strong>Total:</strong>
+              <span class="cart-total" id="cartTotal">Rp 0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 
+        FORM PEMBAYARAN
+        Input jumlah uang, perhitungan kembalian otomatis, dan tombol checkout.
+        Tombol checkout dinonaktifkan jika total = 0 atau uang kurang.
+      -->
+      <div class="section-card payment-card">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-calculator me-2"></i> Pembayaran
+          </h5>
+        </div>
+        <div class="card-body payment-body">
+          <div>
+            <label for="cashInput" class="form-label">Jumlah Bayar (Rp)</label>
+            <input
+              type="number"
+              class="form-control payment-input"
+              id="cashInput"
+              min="0"
+            />
+            <div class="form-text text-danger" id="paymentMessage"></div>
+          </div>
+          <div>
+            <label class="form-label">Kembalian:</label>
+            <h5 id="changeAmount" class="text-success">Rp 0</h5>
+          </div>
+          <button
+            class="btn btn-success w-100 py-2 fs-5"
+            id="checkoutBtn"
+            disabled
+          >
+            <i class="fas fa-check-circle me-2"></i>Proses Transaksi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!--
+  JAVASCRIPT: LOGIKA UTAMA HALAMAN
+  Mengelola:
+    - Pememuatan daftar produk aktif dari API
+    - Pencarian produk real-time
+    - Manajemen keranjang belanja (tambah, ubah kuantitas, hapus)
+    - Validasi stok saat menambah/mengubah jumlah
+    - Perhitungan total, kembalian, dan validasi pembayaran
+    - Proses checkout ke endpoint /api/sales
+    - Navigasi ke halaman struk setelah transaksi sukses
+  Fitur kenyamanan:
+    - Tekan ENTER di input pembayaran = proses transaksi
+    - Scroll internal di daftar produk dan keranjang
+-->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    let shoppingCart = [];
+    let allProducts = [];
+
+    // === FUNGSI BANTU ===
+    // Format angka ke format Rupiah Indonesia
+    function formatRupiah(angka) {
+      return "Rp " + angka.toLocaleString("id-ID");
+    }
+
+    // Perbarui tampilan kembalian dan validasi pembayaran
+    function updateChangeDisplay() {
+      const cash = parseInt(document.getElementById("cashInput").value) || 0;
+      const total = shoppingCart.reduce(
+        (sum, item) => sum + item.harga * item.quantity,
+        0
+      );
+      const changeEl = document.getElementById("changeAmount");
+      const msgEl = document.getElementById("paymentMessage");
+      const checkoutBtn = document.getElementById("checkoutBtn");
+
+      // Tampilkan pesan jika uang kurang
+      if (cash < total && cash > 0) {
+        msgEl.textContent = "Uang kurang!";
+        checkoutBtn.disabled = true;
+      } else {
+        msgEl.textContent = "";
+        checkoutBtn.disabled = total === 0; // Nonaktifkan jika keranjang kosong
+      }
+
+      // Tampilkan kembalian (minimal 0)
+      changeEl.textContent = formatRupiah(Math.max(0, cash - total));
+    }
+
+    // === RENDER DAFTAR PRODUK ===
+    function renderProductGrid(searchTerm = "") {
+      const grid = document.getElementById("productGrid");
+      // Filter: hanya produk aktif dengan stok > 0, dan cocok dengan pencarian
+      const filtered = allProducts.filter(
+        (p) =>
+          p.stok > 0 &&
+          p.isActive === true &&
+          ((p.id_produk || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+            p.nama.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+
+      if (filtered.length === 0) {
+        grid.innerHTML =
+          '<div class="text-center text-muted py-4">Tidak ada produk</div>';
+        return;
+      }
+
+      // Bangun kartu produk
+      let html = "";
+      filtered.forEach((p) => {
+        html += `
+                <div class="product-item">
+                    <div class="card h-100 product-card" data-id="${p._id}">
+                        <div class="card-body p-2">
+                            <div class="text-muted small">ID: ${
+                              p.id_produk || "-"
+                            }</div>
+                            <div class="fw-bold">${p.nama}</div>
+                            <div class="d-flex justify-content-between mt-2">
+                                <span class="text-success">Stok: ${
+                                  p.stok
+                                }</span>
+                                <span class="fw-bold text-danger">${formatRupiah(
+                                  p.harga
+                                )}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+      });
+      grid.innerHTML = html;
+
+      // Pasang event listener klik pada setiap kartu produk
+      document.querySelectorAll(".product-card").forEach((card) => {
+        card.addEventListener("click", () => addToCart(card.dataset.id));
+      });
+    }
+
+    // === TAMBAH KE KERANJANG ===
+    function addToCart(productId) {
+      const product = allProducts.find((p) => p._id === productId);
+      if (!product || product.stok <= 0) return;
+
+      // Cek apakah produk sudah ada di keranjang
+      const existing = shoppingCart.find(
+        (item) => item.productId === productId
+      );
+      if (existing) {
+        // Tambah kuantitas jika stok mencukupi
+        if (existing.quantity < product.stok) {
+          existing.quantity++;
+        } else {
+          alert("Stok tidak mencukupi!");
+          return;
+        }
+      } else {
+        // Tambah item baru ke keranjang
+        shoppingCart.push({
+          productId: product._id,
+          nama: product.nama,
+          harga: product.harga,
+          quantity: 1,
+        });
+      }
+      updateCartDisplay();
+      updateChangeDisplay();
+    }
+
+    // === UPDATE TAMPILAN KERANJANG ===
+    function updateCartDisplay() {
+      const cartEl = document.getElementById("cartItems");
+      const totalEl = document.getElementById("cartTotal");
+
+      if (shoppingCart.length === 0) {
+        cartEl.innerHTML =
+          '<div class="text-center text-muted my-5">Keranjang kosong</div>';
+        totalEl.textContent = "Rp 0";
+        document.getElementById("checkoutBtn").disabled = true;
+        updateChangeDisplay();
+        return;
+      }
+
+      // Bangun daftar item di keranjang
+      let total = 0;
+      let html = "";
+      shoppingCart.forEach((item) => {
+        const product = allProducts.find((p) => p._id === item.productId);
+        const maxQty = product ? product.stok : 999;
+        const subtotal = item.harga * item.quantity;
+        total += subtotal;
+        html += `
+                <div class="cart-item" data-product-id="${item.productId}">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>${item.nama}</strong><br>
+                            <small class="text-muted">${formatRupiah(
+                              item.harga
+                            )} × ${item.quantity}</small>
+                        </div>
+                        <div class="text-end">
+                            <strong>${formatRupiah(subtotal)}</strong><br>
+                            <div class="qty-controls mt-1">
+                                <button class="btn btn-outline-secondary qty-btn btn-minus" data-change="-1">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <input type="number" 
+                                       class="form-control qty-input text-center" 
+                                       value="${item.quantity}" 
+                                       min="1" 
+                                       max="${maxQty}" 
+                                       data-product-id="${item.productId}"
+                                       style="width: 5rem; padding: 0.25rem; font-size: 0.9rem; border: 1px solid #ddd; border-radius: 0.25rem; text-align: center;">
+                                <button class="btn btn-outline-secondary qty-btn btn-plus" data-change="1">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+      });
+
+      cartEl.innerHTML = html;
+      totalEl.textContent = formatRupiah(total);
+      updateChangeDisplay();
+
+      // Pasang event listener tombol +/- di keranjang
+      cartEl.querySelectorAll(".btn-minus, .btn-plus").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const change = parseInt(e.currentTarget.dataset.change);
+          const cartItem = e.currentTarget.closest(".cart-item");
+          const productId = cartItem.dataset.productId;
+          const input = cartItem.querySelector(".qty-input");
+          let current = parseInt(input.value) || 1;
+
+          if (change === -1 && current <= 1) {
+            // Hapus item jika kuantitas = 1 dan dikurangi
+            shoppingCart = shoppingCart.filter(
+              (item) => item.productId !== productId
+            );
+          } else {
+            // Sesuaikan kuantitas baru
+            let newQty = current + change;
+            const product = allProducts.find((p) => p._id === productId);
+            const maxQty = product ? product.stok : 999;
+            newQty = Math.max(1, Math.min(newQty, maxQty));
+            input.value = newQty;
+            const cartItemObj = shoppingCart.find(
+              (item) => item.productId === productId
+            );
+            if (cartItemObj) cartItemObj.quantity = newQty;
+          }
+          updateCartDisplay();
+        });
+      });
+
+      // Pasang event listener input kuantitas langsung
+      cartEl.querySelectorAll(".qty-input").forEach((input) => {
+        input.addEventListener("change", (e) => {
+          const newQty = parseInt(e.target.value) || 1;
+          const productId = e.target.dataset.productId;
+          const product = allProducts.find((p) => p._id === productId);
+          const maxQty = product ? product.stok : 999;
+          const finalQty = Math.max(1, Math.min(newQty, maxQty));
+          e.target.value = finalQty;
+          const cartItem = shoppingCart.find(
+            (item) => item.productId === productId
+          );
+          if (cartItem) cartItem.quantity = finalQty;
+          updateCartDisplay();
+        });
+      });
+    }
+
+    // === PROSES CHECKOUT ===
+    async function processSale() {
+      const cash = parseInt(document.getElementById("cashInput").value) || 0;
+      const total = shoppingCart.reduce(
+        (sum, item) => sum + item.harga * item.quantity,
+        0
+      );
+      if (cash < total) {
+        document.getElementById("paymentMessage").textContent = "Uang kurang!";
+        return;
+      }
+
+      // Siapkan data transaksi
+      const saleData = {
+        items: shoppingCart.map((item) => ({
+          productId: item.productId,
+          nama: item.nama,
+          harga: item.harga,
+          quantity: item.quantity,
+          subtotal: item.harga * item.quantity,
+        })),
+        total: total,
+        dibayar: cash,
+        kembalian: cash - total,
+      };
+
+      try {
+        const res = await fetch("/api/sales", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(saleData),
+        });
+
+        // Ambil saleId dari respons JSON
+        const result = await res.json();
+        console.log("Response from server:", result);
+
+        if (res.ok && result.saleId) {
+          // Pastikan saleId valid (24 karakter seperti ObjectId MongoDB)
+          if (result.saleId.length !== 24) {
+            alert("Error: ID transaksi tidak valid.");
+            return;
+          }
+          // Arahkan ke halaman struk setelah sukses
+          window.location.href = `/receipt/${result.saleId}`;
+        } else {
+          alert(
+            "Gagal menyimpan transaksi: " + (result.error || "Unknown error")
+          );
+        }
+      } catch (err) {
+        console.error("Error during checkout:", err);
+        alert("Error: " + err.message);
+      }
+    }
+
+    // === INISIALISASI HALAMAN ===
+    async function init() {
+      try {
+        // Muat daftar produk aktif dari API
+        const res = await fetch("/api/products/active");
+        allProducts = await res.json();
+        renderProductGrid();
+
+        // Pasang event listener pencarian
+        document
+          .getElementById("searchProduct")
+          .addEventListener("input", (e) => {
+            renderProductGrid(e.target.value);
+          });
+
+        // Pasang event listener checkout
+        document
+          .getElementById("checkoutBtn")
+          .addEventListener("click", processSale);
+
+        // Pasang event listener kosongkan keranjang
+        document
+          .getElementById("clearCartBtn")
+          .addEventListener("click", () => {
+            if (confirm("Kosongkan keranjang?")) {
+              shoppingCart = [];
+              updateCartDisplay();
+            }
+          });
+
+        // Pasang event listener input pembayaran
+        document
+          .getElementById("cashInput")
+          .addEventListener("input", updateChangeDisplay);
+
+        // ✅ FITUR KENYAMANAN: TEKAN ENTER = PROSES TRANSAKSI
+        document
+          .getElementById("cashInput")
+          .addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              document.getElementById("checkoutBtn").click();
+            }
+          });
+      } catch (err) {
+        console.error(err);
+        document.getElementById("productGrid").innerHTML =
+          '<div class="text-center text-danger p-4">Gagal memuat produk</div>';
+      }
+    }
+
+    init();
+  });
+</script>
+{% endblock %}

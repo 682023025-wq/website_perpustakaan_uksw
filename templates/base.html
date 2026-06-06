@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}POS System{% endblock %}</title>
+    <!-- Menggunakan Bootstrap 5.3.0 untuk tata letak responsif dan komponen UI -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    />
+    <!-- Font Awesome untuk ikon -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      /* Reset dasar dan optimasi tampilan font */
+      * {
+        box-sizing: border-box;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* Skala dasar font lebih kecil agar tampilan lebih padat dan ringkas */
+      html {
+        font-size: 70%;
+      }
+
+      /* Latar belakang dan font utama halaman */
+      body {
+        background-color: #f8f9fa;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        position: relative;
+      }
+
+      /* Sidebar tetap di kiri (desktop) */
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 15rem;
+        min-width: 15.625rem;
+        max-width: 15.625rem;
+        background: #2c3e50; /* Warna gelap untuk sidebar */
+        color: white;
+        padding-top: 1.5rem;
+        padding-bottom: 1.5rem;
+        height: 100dvh; /* Tinggi penuh viewport */
+        z-index: 1000;
+        overflow-y: auto; /* Scroll jika konten panjang */
+        transition: transform 0.25s ease; /* Animasi halus saat buka/tutup */
+      }
+
+      /* Judul di sidebar */
+      .sidebar h5 {
+        font-size: 1.25rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+      }
+
+      /* Gaya untuk setiap item menu di sidebar */
+      .sidebar .nav-link {
+        color: rgba(255, 255, 255, 0.9);
+        padding: 0.75rem 1.25rem;
+        border-radius: 0 0.75rem 0.75rem 0;
+        margin: 0.25rem 0.75rem;
+        transition: all 0.2s ease;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+      }
+
+      /* Ikon di menu sidebar */
+      .sidebar .nav-link i {
+        min-width: 1.5rem;
+        font-size: 1.1rem;
+        margin-right: 0.75rem;
+      }
+
+      /* Efek hover dan saat aktif */
+      .sidebar .nav-link:hover,
+      .sidebar .nav-link.active {
+        background-color: #34495e;
+        color: white;
+      }
+
+      /* Konten utama di sebelah kanan sidebar */
+      .content {
+        margin-left: 15.625rem;
+        padding: 1.25rem;
+        min-height: 100vh;
+        width: calc(100vw - 15.625rem);
+        overflow-x: hidden;
+      }
+
+      /* Overlay gelap saat sidebar terbuka di perangkat mobile */
+      .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100dvh;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 999;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.25s ease, visibility 0.25s;
+      }
+
+      .sidebar-overlay.show {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      /* Responsif: tampilan mobile (lebar maks 768px) */
+      @media (max-width: 768px) {
+        /* Sembunyikan sidebar di luar layar */
+        .sidebar {
+          transform: translateX(-100%);
+          box-shadow: 0.25rem 0 1rem rgba(0, 0, 0, 0.15);
+          z-index: 2000;
+        }
+        /* Tampilkan sidebar saat dibuka */
+        .sidebar.show {
+          transform: translateX(0);
+        }
+        /* Konten utama penuh layar */
+        .content {
+          margin-left: 0;
+          width: 100vw;
+        }
+        /* Tombol toggle menu hanya muncul di mobile */
+        .toggle-sidebar {
+          display: block !important;
+          margin: 1rem;
+        }
+        /* Tombol tutup di dalam sidebar (mobile only) */
+        .mobile-close-btn {
+          position: absolute;
+          top: 1rem;
+          right: 1rem;
+          background: none;
+          border: none;
+          color: white;
+          font-size: 1.5rem;
+          cursor: pointer;
+          z-index: 2001;
+        }
+      }
+
+      /* Sembunyikan elemen mobile di layar besar */
+      @media screen and (min-width: 769px) {
+        html {
+          overflow-x: hidden;
+        }
+        .toggle-sidebar,
+        .mobile-close-btn,
+        .sidebar-overlay {
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Tombol untuk membuka sidebar di perangkat mobile -->
+    <div class="d-md-none p-3">
+      <button class="btn btn-primary toggle-sidebar" id="toggleSidebar">
+        <i class="fas fa-bars"></i> Menu
+      </button>
+    </div>
+
+    <!-- Overlay gelap yang menutupi konten saat sidebar terbuka (mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="container-fluid">
+      <div class="row">
+        <!-- Sidebar navigasi utama -->
+        <div class="col-md-2 sidebar d-md-block" id="sidebar">
+          <!-- Tombol tutup sidebar (hanya di mobile) -->
+          <button class="mobile-close-btn d-md-none" id="closeSidebar">
+            <i class="fas fa-times"></i>
+          </button>
+          <h5 class="text-center mb-4">POS System</h5>
+          <ul class="nav flex-column">
+            <!-- Menu Dashboard -->
+            <li class="nav-item">
+              <a
+                class="nav-link text-white {% if request.endpoint == 'dashboard' %}active{% endif %}"
+                href="{{ url_for('dashboard') }}"
+              >
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+              </a>
+            </li>
+            <!-- Menu Penjualan -->
+            <li class="nav-item">
+              <a
+                class="nav-link text-white {% if request.endpoint == 'sales_page' %}active{% endif %}"
+                href="{{ url_for('sales_page') }}"
+              >
+                <i class="fas fa-cash-register"></i> Penjualan
+              </a>
+            </li>
+
+            <!-- Menu master hanya ditampilkan untuk admin -->
+            {% if session.role == 'admin' %}
+            <li class="nav-item">
+              <a
+                class="nav-link text-white {% if request.endpoint == 'master_product' %}active{% endif %}"
+                href="{{ url_for('master_product') }}"
+              >
+                <i class="fas fa-boxes"></i> Master Produk
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link text-white {% if request.endpoint == 'master_karyawan' %}active{% endif %}"
+                href="{{ url_for('master_karyawan') }}"
+              >
+                <i class="fas fa-users"></i> Master Karyawan
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link text-white {% if request.endpoint == 'master_shift' %}active{% endif %}"
+                href="{{ url_for('master_shift') }}"
+              >
+                <i class="fas fa-calendar-alt"></i> Master Shift
+              </a>
+            </li>
+            {% endif %}
+
+            <!-- Menu Logout (semua pengguna) -->
+            <li class="nav-item mt-4">
+              <a class="nav-link text-white" href="{{ url_for('logout') }}">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Konten utama halaman -->
+        <div class="col-md-10 content" id="mainContent">
+          <!-- Header halaman: judul dan informasi pengguna -->
+          <div
+            class="d-flex justify-content-between align-items-start mb-4 flex-wrap"
+          >
+            <div>
+              <h2 class="mb-1">
+                {% block page_title %}Dashboard{% endblock %}
+              </h2>
+              {% block page_subtitle %}{% endblock %}
+            </div>
+            <div class="text-end mt-2 mt-md-0">
+              <small class="text-muted">
+                Halo, <strong>{{ session.username or 'User' }}</strong> (<span
+                  class="text-capitalize"
+                  >{{ session.role or 'guest' }}</span
+                >)
+              </small>
+            </div>
+          </div>
+
+          <!-- Blok konten yang diisi oleh halaman turunan -->
+          {% block content %}{% endblock %}
+        </div>
+      </div>
+    </div>
+
+    <!-- JavaScript Bootstrap untuk komponen interaktif -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // Fungsionalitas sidebar responsif
+      document.addEventListener("DOMContentLoaded", function () {
+        const sidebar = document.getElementById("sidebar");
+        const toggleBtn = document.getElementById("toggleSidebar");
+        const closeBtn = document.getElementById("closeSidebar");
+        const overlay = document.getElementById("sidebarOverlay");
+        const mainContent = document.getElementById("mainContent");
+
+        // Buka sidebar saat tombol menu diklik (mobile)
+        if (toggleBtn) {
+          toggleBtn.addEventListener("click", function () {
+            sidebar.classList.add("show");
+            overlay.classList.add("show");
+          });
+        }
+
+        // Tutup sidebar saat tombol × diklik
+        if (closeBtn) {
+          closeBtn.addEventListener("click", function () {
+            sidebar.classList.remove("show");
+            overlay.classList.remove("show");
+          });
+        }
+
+        // Tutup sidebar saat mengklik overlay gelap
+        if (overlay) {
+          overlay.addEventListener("click", function () {
+            sidebar.classList.remove("show");
+            overlay.classList.remove("show");
+          });
+        }
+
+        // Opsional: tutup sidebar saat mengklik area konten (hanya di mobile)
+        if (mainContent) {
+          mainContent.addEventListener("click", function () {
+            if (
+              window.innerWidth <= 768 &&
+              sidebar.classList.contains("show")
+            ) {
+              sidebar.classList.remove("show");
+              overlay.classList.remove("show");
+            }
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

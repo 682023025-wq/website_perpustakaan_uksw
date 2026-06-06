@@ -1,0 +1,830 @@
+{% extends "base.html" %}
+{% block title %}Manajemen Produk - POS System{% endblock %}
+{% block page_title %}Manajemen Produk{% endblock %}
+{% block page_subtitle %}
+    <p class="text-muted mb-0">Kelola data produk dan stok</p>
+{% endblock %}
+
+{% block content %}
+<!-- 
+  HALAMAN MANAJEMEN PRODUK
+  Memungkinkan admin untuk:
+    - Melihat daftar produk dengan status dan stok
+    - Menambah, mengedit, dan mengelola produk
+    - Menyaring berdasarkan status (aktif/tidak aktif) atau stok rendah
+    - Mencari dan mengurutkan data
+    - Mengakses halaman kategori langsung dari ringkasan
+  Menggunakan Choices.js untuk dropdown kategori yang bisa dicari,
+  dan SweetAlert2 untuk notifikasi (meski hanya digunakan untuk alert fallback).
+-->
+
+<!-- SweetAlert2: library notifikasi modern (digunakan sebagai fallback alert) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<!-- Choices.js: membuat dropdown kategori menjadi searchable -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@9.0.1/public/assets/styles/choices.min.css">
+
+<style>
+    /* 
+      Kontainer utama halaman — memastikan lebar penuh tanpa overflow horizontal.
+    */
+    .products-container {
+        width: 100%;
+        max-width: 100%;
+        padding-right: 0.5rem;
+    }
+
+    /* 
+      Tombol "Tambah Produk": warna hitam gelap, efek hover halus, sedikit terangkat.
+    */
+    .btn-add {
+        background: #212529;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+    
+    .btn-add:hover {
+        background: #1a1e21;
+        transform: translateY(-0.125rem);
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.1);
+    }
+    
+    /* 
+      ALERT STOK RENDAH
+      Ditampilkan di atas tabel jika ada produk dengan stok < 10.
+    */
+    .alert-warning {
+        border: 1px solid #ffc107;
+        background-color: #fff9e6;
+        color: #856404;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+    }
+
+    /* 
+      KONTAINER TABEL DENGAN SCROLL
+      Memungkinkan scroll vertikal/horizontal jika data melebihi tinggi maksimum.
+    */
+    .table-container {
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 30rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.375rem rgba(0,0,0,0.05);
+        scrollbar-width: thin;
+        scrollbar-color: #c1c1c1 #f1f1f1;
+    }
+
+    .table-container::-webkit-scrollbar {
+        width: 0.375rem;
+    }
+    .table-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 0.25rem;
+    }
+    .table-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 0.25rem;
+    }
+    .table-container::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+
+    /* 
+      HEADER TABEL YANG STICKY
+      Tetap terlihat di atas saat pengguna scroll ke bawah.
+    */
+    .table-container thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 10;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+    }
+
+    /* Lebar minimum tabel agar kolom tidak terlalu sempit */
+    table {
+        min-width: 45rem;
+        width: 100%;
+        font-size: 0.92rem;
+    }
+
+    /* 
+      FITUR SORTING KOLOM
+      Kolom dengan kelas "sortable" bisa diklik untuk mengurutkan data.
+    */
+    th.sortable {
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+        white-space: nowrap;
+        padding-right: 1.5rem;
+    }
+
+    th.sortable::after {
+        content: "↕";
+        position: absolute;
+        right: 0.5rem;
+        opacity: 0.4;
+        font-size: 0.8rem;
+    }
+
+    th.sortable.asc::after {
+        content: "↑";
+        opacity: 1;
+        color: #0d6efd;
+    }
+
+    th.sortable.desc::after {
+        content: "↓";
+        opacity: 1;
+        color: #0d6efd;
+    }
+
+    /* 
+      INDICATOR STATUS (AKTIF/TIDAK AKTIF)
+      Menggunakan latar warna lembut dan teks kontras.
+    */
+    .badge-status {
+        padding: 0.35em 0.65em;
+        font-size: 0.75em;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+    .badge-active {
+        background-color: #d1e7dd;
+        color: #0f5132;
+    }
+
+    .badge-inactive {
+        background-color: #f8d7da;
+        color: #842029;
+    }
+
+    /* 
+      KARTU STATISTIK (RINGKASAN)
+      Menampilkan:
+        - Produk Aktif (klik untuk ganti filter)
+        - Total Stok
+        - Stok Rendah (klik untuk filter stok < 10)
+        - Total Kategori (klik untuk ke halaman kategori)
+    */
+    .stat-card {
+        border: none;
+        box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s;
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        min-height: 8.125rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-0.125rem);
+        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+    }
+    
+    /* 
+      TANDA VISUAL SAAT KARTU DIPILIH SEBAGAI FILTER
+      - Filter status: biru
+      - Filter stok rendah: kuning
+    */
+    .stat-card.active-filter {
+        border: 0.125rem solid #0d6efd;
+        box-shadow: 0 0.25rem 0.75rem rgba(13, 110, 253, 0.2);
+    }
+
+    .stat-card.low-stock-filter {
+        border: 0.125rem solid #ffc107;
+        box-shadow: 0 0.25rem 0.75rem rgba(255, 193, 7, 0.2);
+    }
+
+    /* Warna latar belakang kartu */
+    .bg-light-success { background-color: #ecf8f2 !important; }
+    .bg-light-warning { background-color: #fff9e6 !important; }
+    .bg-light-info    { background-color: #e3f2fd !important; }
+    .bg-light-gray    { background-color: #f8f9fa !important; }
+
+    /* Gaya teks di dalam kartu statistik */
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #333;
+        margin: 0.2rem 0;
+        line-height: 1.2;
+    }
+    
+    .stat-label {
+        font-size: 0.85rem;
+        color: #6c757d;
+        font-weight: 600;
+    }
+    
+    /* Ikon di pojok kanan atas kartu */
+    .stat-icon {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        font-size: 1.3rem;
+        opacity: 0.25;
+        color: #0d6efd;
+    }
+
+    /* 
+      PESAN ERROR VALIDASI
+      Ditampilkan di bawah input saat data tidak valid.
+    */
+    .invalid-feedback {
+        display: block;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 0.875em;
+        color: #dc3545;
+    }
+
+    /* 
+      RESPONSIF UNTUK LAYAR KECIL (HP)
+      Menyesuaikan ukuran font, padding, dan lebar minimum.
+    */
+    @media (max-width: 767px) {
+        .stat-card {
+            min-height: 6.875rem;
+            padding: 1rem;
+        }
+        .stat-value { font-size: 1.3rem; }
+        .stat-icon { font-size: 1.1rem; }
+        table { min-width: 37.5rem; font-size: 0.85rem; }
+        .btn-add { font-size: 0.9rem; padding: 0.4rem 0.8rem; }
+    }
+</style>
+
+<div class="products-container">
+    <!-- 
+      KARTU STATISTIK (4 KARTU)
+      - Produk Aktif: bisa diklik untuk berpindah filter (aktif → tidak aktif → semua)
+      - Total Stok: jumlah semua stok produk aktif & tidak aktif
+      - Stok Rendah: jumlah produk dengan stok < 10 (hanya aktif), bisa diklik untuk filter
+      - Total Kategori: tautan langsung ke halaman manajemen kategori
+    -->
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-3 mb-4">
+        <div class="col">
+            <div class="stat-card bg-light-gray clickable" id="productStatusCard">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-value" id="productStatusCount">0</div>
+                <div class="stat-label" id="productStatusLabel">Produk Aktif</div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="stat-card bg-light-success">
+                <div class="stat-icon"><i class="fas fa-cubes"></i></div>
+                <div class="stat-value" id="totalStock">0</div>
+                <div class="stat-label">Total Stok</div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="stat-card bg-light-warning clickable" id="lowStockCard">
+                <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="stat-value" id="lowStockCount">0</div>
+                <div class="stat-label">Stok Rendah</div>
+            </div>
+        </div>
+        <div class="col">
+            <a href="{{ url_for('master_kategori') }}" class="stat-card bg-light-info" style="text-decoration: none; color: inherit; display: block;">
+                <div class="stat-icon"><i class="fas fa-tags"></i></div>
+                <div class="stat-value">{{ total_categories }}</div>
+                <div class="stat-label">Total Kategori</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- 
+      ALERT STOK RENDAH
+      Ditampilkan hanya jika ada produk dengan stok < 10.
+      Menampilkan daftar nama produk yang perlu perhatian.
+    -->
+    <div class="alert-warning d-none" id="lowStockAlert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <span id="lowStockMessage">1 produk memiliki stok rendah (kurang dari 10): Roti Tawar</span>
+    </div>
+
+    <!-- 
+      TABEL DAFTAR PRODUK
+      Dilengkapi pencarian global, reset, dan kolom aksi (edit).
+    -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-boxes me-2"></i> Daftar Produk</h5>
+            <button class="btn-add" id="addProductBtn">
+                <i class="fas fa-plus me-1"></i> Tambah Produk
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+                <div class="flex-grow-1" style="min-width: 17.5rem;">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" 
+                               class="form-control border-start-0" 
+                               id="globalSearch" 
+                               name="globalSearch" 
+                               placeholder="Cari ID, nama, kategori, atau stok...">
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary" id="resetSearch">Reset</button>
+            </div>
+
+            <div class="table-container">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="sortable" data-sort="id">ID Produk</th>
+                            <th class="sortable" data-sort="nama">Nama Produk</th>
+                            <th class="sortable" data-sort="stok">Stok</th>
+                            <th class="sortable" data-sort="harga">Harga</th>
+                            <th class="sortable" data-sort="kategori">Kategori</th>
+                            <th class="sortable" data-sort="status">Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 
+  MODAL FORM TAMBAH/EDIT PRODUK
+  Menggunakan Choices.js untuk dropdown kategori yang bisa dicari.
+  ID produk di-generate otomatis dan hanya ditampilkan sebagai preview.
+-->
+<div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="productModalLabel">Tambah/Edit Produk</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="productForm">
+                <div class="modal-body">
+                    <!-- ID tersembunyi untuk operasi edit -->
+                    <input type="hidden" id="productId" name="productId">
+
+                    <!-- ID Produk (read-only preview) -->
+                    <div class="mb-3">
+                        <label for="productDisplayId" class="form-label">ID Produk</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="productDisplayId" 
+                               name="productDisplayId"
+                               readonly 
+                               disabled>
+                        <small class="form-text text-muted">ID otomatis dibuat saat disimpan</small>
+                    </div>
+
+                    <!-- Nama Produk -->
+                    <div class="mb-3">
+                        <label for="productName" class="form-label">Nama Produk</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="productName" 
+                               name="productName"
+                               required>
+                        <div class="invalid-feedback" id="nameError"></div>
+                    </div>
+
+                    <!-- Harga -->
+                    <div class="mb-3">
+                        <label for="productPrice" class="form-label">Harga</label>
+                        <input type="number" 
+                               class="form-control" 
+                               id="productPrice" 
+                               name="productPrice"
+                               min="0" 
+                               required>
+                    </div>
+
+                    <!-- Stok -->
+                    <div class="mb-3">
+                        <label for="productStock" class="form-label">Stok</label>
+                        <input type="number" 
+                               class="form-control" 
+                               id="productStock" 
+                               name="productStock"
+                               min="0" 
+                               required>
+                    </div>
+
+                    <!-- Kategori (dengan pencarian) -->
+                    <div class="mb-3">
+                        <label for="productCategorySelect" class="form-label">Kategori</label>
+                        <select class="form-select" 
+                                id="productCategorySelect" 
+                                name="productCategorySelect"
+                                required>
+                            <option value="">Pilih Kategori</option>
+                        </select>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="mb-3">
+                        <label for="productStatus" class="form-label">Status</label>
+                        <select class="form-select" 
+                                id="productStatus" 
+                                name="productStatus"
+                                required>
+                            <option value="active">Aktif</option>
+                            <option value="inactive">Tidak Aktif</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!--
+  JAVASCRIPT: LOGIKA UTAMA HALAMAN
+  Mengelola:
+    - Pememuatan data produk dan kategori dari API
+    - Filter berdasarkan status atau stok rendah
+    - Pencarian global
+    - Sorting kolom
+    - Validasi form (nama unik, kategori wajib)
+    - Interaksi modal
+    - Integrasi Choices.js untuk dropdown searchable
+    - Format angka ke Rupiah
+  Setelah simpan sukses, data dimemuat ulang untuk memastikan konsistensi.
+-->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/choices.js@9.0.1/public/assets/scripts/choices.min.js"></script>
+<script>
+// === VARIABEL GLOBAL ===
+let allProducts = [];
+let allCategories = [];
+let currentSort = { key: null, dir: 'asc' };
+let currentStatusFilter = 'active';
+let isLowStockFilterActive = false;
+let categoryChoices = null;
+
+// Siklus filter status: aktif → tidak aktif → semua → (ulang)
+const statusFilterCycle = ['active', 'inactive', 'all'];
+let currentFilterIndex = 0;
+
+// === FUNGSI BANTU ===
+// Format angka ke format Rupiah Indonesia
+function formatRupiah(angka) {
+    return 'Rp ' + angka.toLocaleString('id-ID');
+}
+
+// Generate ID sementara untuk preview saat tambah produk
+function generatePreviewId() {
+    const nextNo = allProducts.length + 1;
+    return `PRD${nextNo.toString().padStart(4, '0')}`;
+}
+
+// Render ulang dropdown kategori dengan Choices.js
+function renderCategoryDropdown() {
+    const select = document.getElementById('productCategorySelect');
+    select.innerHTML = '<option value="">Pilih Kategori</option>';
+    
+    allCategories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat.nama;
+        opt.textContent = cat.nama;
+        select.appendChild(opt);
+    });
+
+    // Hancurkan instance lama jika ada
+    if (categoryChoices) categoryChoices.destroy();
+    // Inisialisasi Choices.js
+    categoryChoices = new Choices(select, {
+        searchEnabled: true,
+        searchPlaceholderValue: 'Cari kategori...',
+        placeholder: true,
+        placeholderValue: 'Pilih Kategori',
+        noResultsText: 'Tidak ada kategori yang cocok',
+        itemSelectText: '',
+        shouldSort: false
+    });
+}
+
+// === TERAPKAN FILTER, PENCARIAN, DAN SORTING ===
+function applyFiltersAndSort() {
+    const searchTerm = document.getElementById('globalSearch').value.toLowerCase();
+    let filtered = allProducts.filter(p => {
+        // Cari di semua kolom
+        const id = (p.id_produk || '').toLowerCase();
+        const nama = (p.nama || '').toLowerCase();
+        const kategori = (p.kategori || '').toLowerCase();
+        const stok = String(p.stok);
+        const matchesSearch = id.includes(searchTerm) || nama.includes(searchTerm) || 
+                              kategori.includes(searchTerm) || stok.includes(searchTerm);
+        // Terapkan filter status
+        let matchesStatus = true;
+        if (currentStatusFilter === 'active') matchesStatus = p.isActive;
+        else if (currentStatusFilter === 'inactive') matchesStatus = !p.isActive;
+        // Terapkan filter stok rendah
+        let matchesLowStock = !isLowStockFilterActive || (p.stok < 10);
+        return matchesSearch && matchesStatus && matchesLowStock;
+    });
+
+    // Urutkan data jika ada kolom yang dipilih
+    if (currentSort.key) {
+        filtered.sort((a, b) => {
+            let valA, valB;
+            switch (currentSort.key) {
+                case 'id': valA = (a.id_produk || '').toLowerCase(); valB = (b.id_produk || '').toLowerCase(); break;
+                case 'nama': valA = (a.nama || '').toLowerCase(); valB = (b.nama || '').toLowerCase(); break;
+                case 'stok': valA = a.stok; valB = b.stok; break;
+                case 'harga': valA = a.harga; valB = b.harga; break;
+                case 'kategori': valA = (a.kategori || '').toLowerCase(); valB = (b.kategori || '').toLowerCase(); break;
+                case 'status': valA = a.isActive ? 'aktif' : 'tidak_aktif'; valB = b.isActive ? 'aktif' : 'tidak_aktif'; break;
+                default: return 0;
+            }
+            if (valA < valB) return currentSort.dir === 'asc' ? -1 : 1;
+            if (valA > valB) return currentSort.dir === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
+    renderFilteredTable(filtered);
+}
+
+// === RENDER TABEL DAN KARTU STATISTIK ===
+function renderFilteredTable(products) {
+    const tbody = document.getElementById('productTableBody');
+    tbody.innerHTML = '';
+
+    // Hitung statistik global
+    const activeProducts = allProducts.filter(p => p.isActive).length;
+    const inactiveProducts = allProducts.filter(p => !p.isActive).length;
+    const totalAllProducts = allProducts.length;
+    const totalStock = allProducts.reduce((sum, p) => sum + (p.stok || 0), 0);
+    const lowStockCount = allProducts.filter(p => p.stok < 10 && p.isActive).length;
+
+    // Perbarui nilai di kartu statistik
+    document.getElementById('totalStock').textContent = totalStock.toLocaleString('id-ID');
+    document.getElementById('lowStockCount').textContent = lowStockCount;
+
+    // Perbarui kartu status produk
+    let countToShow = 0, labelToShow = '';
+    switch(currentStatusFilter) {
+        case 'active': countToShow = activeProducts; labelToShow = 'Produk Aktif'; break;
+        case 'inactive': countToShow = inactiveProducts; labelToShow = 'Produk Tidak Aktif'; break;
+        case 'all': countToShow = totalAllProducts; labelToShow = 'Semua Produk'; break;
+    }
+    document.getElementById('productStatusCount').textContent = countToShow;
+    document.getElementById('productStatusLabel').textContent = labelToShow;
+
+    // Beri highlight pada kartu yang aktif
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter', 'low-stock-filter'));
+    if (currentStatusFilter !== 'all') document.getElementById('productStatusCard').classList.add('active-filter');
+    if (isLowStockFilterActive) document.getElementById('lowStockCard').classList.add('low-stock-filter');
+
+    // Tampilkan/sembunyikan alert stok rendah
+    const alertBox = document.getElementById('lowStockAlert');
+    if (lowStockCount > 0) {
+        const names = allProducts.filter(p => p.stok < 10 && p.isActive).map(p => p.nama).join(', ');
+        document.getElementById('lowStockMessage').textContent = `${lowStockCount} produk memiliki stok rendah (kurang dari 10): ${names}`;
+        alertBox.classList.remove('d-none');
+    } else {
+        alertBox.classList.add('d-none');
+    }
+
+    // Render tabel
+    if (products.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data sesuai pencarian</td></tr>`;
+        return;
+    }
+
+    products.forEach(p => {
+        const statusBadge = p.isActive ? '<span class="badge-status badge-active">Aktif</span>' : '<span class="badge-status badge-inactive">Tidak Aktif</span>';
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${p.id_produk || '—'}</td>
+            <td>${p.nama || '—'}</td>
+            <td>${p.stok} unit</td>
+            <td>${formatRupiah(p.harga)}</td>
+            <td>${p.kategori || '—'}</td>
+            <td>${statusBadge}</td>
+            <td><button class="btn btn-sm btn-outline-primary edit-btn" data-id="${p._id}"><i class="fas fa-edit"></i> Edit</button></td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Pasang event listener edit
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => openEditModal(btn.dataset.id));
+    });
+}
+
+// === SORTING KOLOM ===
+document.querySelectorAll('.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+        const key = th.dataset.sort;
+        if (currentSort.key === key) {
+            currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSort.key = key;
+            currentSort.dir = 'asc';
+        }
+        document.querySelectorAll('.sortable').forEach(el => {
+            el.classList.remove('asc', 'desc');
+        });
+        th.classList.add(currentSort.dir);
+        applyFiltersAndSort();
+    });
+});
+
+// === FILTER STATUS (KLIK KARTU PRODUK AKTIF) ===
+document.getElementById('productStatusCard').addEventListener('click', () => {
+    currentFilterIndex = (currentFilterIndex + 1) % statusFilterCycle.length;
+    currentStatusFilter = statusFilterCycle[currentFilterIndex];
+    isLowStockFilterActive = false; // Nonaktifkan filter stok saat ganti status
+    applyFiltersAndSort();
+});
+
+// === FILTER STOK RENDAH (KLIK KARTU STOK RENDAH) ===
+document.getElementById('lowStockCard').addEventListener('click', () => {
+    isLowStockFilterActive = !isLowStockFilterActive;
+    applyFiltersAndSort();
+});
+
+// === PENCARIAN DAN RESET ===
+document.getElementById('globalSearch').addEventListener('input', applyFiltersAndSort);
+document.getElementById('resetSearch').addEventListener('click', () => {
+    document.getElementById('globalSearch').value = '';
+    applyFiltersAndSort();
+});
+
+// === MUAT DATA DARI API ===
+async function loadCategories() {
+    try {
+        const res = await fetch('/api/categories');
+        if (!res.ok) throw new Error('Gagal memuat kategori');
+        allCategories = await res.json();
+        renderCategoryDropdown();
+    } catch (err) {
+        console.error('Error load kategori:', err);
+        alert('Gagal memuat daftar kategori. Coba refresh halaman.');
+    }
+}
+
+async function loadProducts() {
+    try {
+        const res = await fetch('/api/products');
+        if (!res.ok) throw new Error('Gagal memuat produk');
+        allProducts = await res.json();
+        applyFiltersAndSort();
+    } catch (err) {
+        console.error('Error load produk:', err);
+        document.getElementById('productTableBody').innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Gagal memuat data produk.</td></tr>`;
+    }
+}
+
+// === VALIDASI NAMA UNIK ===
+function isProductNameDuplicate(name, excludeId = null) {
+    const nameLower = name.trim().toLowerCase();
+    return allProducts.some(p => 
+        p.nama.trim().toLowerCase() === nameLower && 
+        (excludeId ? p._id !== excludeId : true)
+    );
+}
+
+// === SUBMIT FORM ===
+document.getElementById('productForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    // Reset error sebelumnya
+    document.getElementById('nameError').textContent = '';
+    document.getElementById('productName').classList.remove('is-invalid');
+
+    // Ambil nilai dari form
+    const id = document.getElementById('productId').value;
+    const nameInput = document.getElementById('productName').value.trim();
+    const price = parseInt(document.getElementById('productPrice').value);
+    const stock = parseInt(document.getElementById('productStock').value);
+    const statusValue = document.getElementById('productStatus').value;
+    const isActive = (statusValue === 'active');
+    const kategori = document.getElementById('productCategorySelect').value;
+
+    // Validasi
+    if (!nameInput) {
+        showError('Nama produk wajib diisi');
+        return;
+    }
+    if (isProductNameDuplicate(nameInput, id)) {
+        showError('Nama produk sudah digunakan.');
+        return;
+    }
+    if (!kategori) {
+        showError('Kategori wajib dipilih');
+        return;
+    }
+
+    const product = { 
+        nama: nameInput, 
+        harga: price, 
+        stok: stock, 
+        kategori: kategori,
+        isActive: isActive 
+    };
+    const isEdit = !!id;
+    const action = isEdit ? 'memperbarui' : 'menambahkan';
+
+    // Konfirmasi aksi
+    if (!confirm(`Apakah Anda yakin ingin ${action} produk ini?`)) {
+        return;
+    }
+
+    try {
+        const url = isEdit ? `/api/products/${id}` : '/api/products';
+        const method = isEdit ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(product)
+        });
+
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.error || 'Gagal menyimpan data');
+        }
+
+        // Sukses: memuat ulang data
+        await loadProducts();
+        await loadCategories();
+        bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
+
+    } catch (err) {
+        alert('Error: ' + (err.message || 'Terjadi kesalahan saat menyimpan data.'));
+        console.error(err);
+    }
+});
+
+// === FUNGSI BANTU TAMPILKAN ERROR ===
+function showError(message) {
+    const errorEl = document.getElementById('nameError');
+    const input = document.getElementById('productName');
+    errorEl.textContent = message;
+    input.classList.add('is-invalid');
+    input.focus();
+}
+
+// === BUKA MODAL EDIT ===
+function openEditModal(id) {
+    const product = allProducts.find(p => p._id === id);
+    if (product) {
+        document.getElementById('productId').value = product._id;
+        document.getElementById('productDisplayId').value = product.id_produk || '';
+        document.getElementById('productName').value = product.nama;
+        document.getElementById('productPrice').value = product.harga;
+        document.getElementById('productStock').value = product.stok;
+        document.getElementById('productStatus').value = product.isActive ? 'active' : 'inactive';
+        document.getElementById('productCategorySelect').value = product.kategori || '';
+        // Re-inisialisasi Choices.js
+        if (categoryChoices) categoryChoices.destroy();
+        renderCategoryDropdown();
+        document.getElementById('productModalLabel').textContent = 'Edit Produk';
+        new bootstrap.Modal(document.getElementById('productModal')).show();
+    }
+}
+
+// === BUKA MODAL TAMBAH ===
+document.getElementById('addProductBtn').addEventListener('click', () => {
+    document.getElementById('productForm').reset();
+    document.getElementById('productId').value = '';
+    document.getElementById('productDisplayId').value = generatePreviewId();
+    document.getElementById('nameError').textContent = '';
+    document.getElementById('productName').classList.remove('is-invalid');
+    document.getElementById('productStatus').value = 'active';
+    if (categoryChoices) categoryChoices.destroy();
+    renderCategoryDropdown();
+    document.getElementById('productModalLabel').textContent = 'Tambah Produk';
+    new bootstrap.Modal(document.getElementById('productModal')).show();
+});
+
+// === INISIALISASI AWAL ===
+loadProducts();
+loadCategories();
+</script>
+{% endblock %}
