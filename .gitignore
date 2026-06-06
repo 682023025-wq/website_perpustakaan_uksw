@@ -1,57 +1,11 @@
+(perlukan mengabaikan file yang dimodifikasi hanya jika termasuk dalam kategori yang harus diabaikan, seperti berkas biner atau artefak build. Dalam kasus ini, `perpustakaan_uksw/models.py` adalah file sumber Python biasa, jadi tidak perlu ditambahkan ke .gitignore. Karena tidak ada file lain dalam daftar perubahan yang memerlukan pengabaian, maka .gitignore tetap kosong.)
+
+(perlu dicatat bahwa contoh 1 dalam instruksi menunjukkan bahwa jika hanya ada file sumber/konfigurasi yang berubah, maka outputnya kosong. Ini adalah skenario serupa.)
+
+(perlu mengikuti aturan 6: "If the change list contains ONLY source or config files... output an EMPTY .gitignore")
+
+Karena satu-satunya file yang dimodifikasi adalah `perpustakaan_uksw/models.py`, yang merupakan file sumber Python (kemungkinan besar berekstensi `.py` meskipun ekstensinya tidak disebutkan secara eksplisit, tetapi logika berlaku untuk file model Django/Python), dan tidak ada artefak build, dependensi, atau file sementara lainnya dalam daftar perubahan, maka tidak ada aturan .gitignore yang perlu ditambahkan atau diubah.
+
 ```
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.py~
-*.py.class
-*.py.backup
-*.swp
-*.swo
-.Python
-env/
-venv/
-.venv/
-.ENV
-.venv.bak/
-pip-log.txt
-pip-selfcheck.json
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-*.tmp
-*~
 
-# Flask/Python web
-instance/
-.webassets-cache
-
-# Environment variables
-.env
-.env.local
-.env.*
-
-# IDE
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
-.project
-.pydevproject
-.settings/
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
 ```
