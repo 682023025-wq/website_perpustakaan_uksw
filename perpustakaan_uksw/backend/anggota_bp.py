@@ -53,10 +53,11 @@ def katalog():
     """
     Katalog Buku Perpustakaan
     Grid buku responsive dengan fitur pencarian dan filter
-    Tombol "Pinjam" jika stok>0, "Reservasi" jika stok=0
+    Tombol "Pinjam" jika stok>0, "Wishlist" jika stok=0
     """
     search = request.args.get('search', '')
     kategori_id = request.args.get('kategori', type=int)
+    ketersediaan = request.args.get('ketersediaan', '')
     
     query = Buku.query
     
@@ -72,6 +73,12 @@ def katalog():
     if kategori_id:
         query = query.filter(Buku.id_kategori == kategori_id)
     
+    # Filter ketersediaan
+    if ketersediaan == 'tersedia':
+        query = query.filter(Buku.stok_tersedia > 0)
+    elif ketersediaan == 'habis':
+        query = query.filter(Buku.stok_tersedia == 0)
+    
     buku_list = query.order_by(Buku.judul).all()
     kategori_list = KategoriBuku.query.order_by(KategoriBuku.nama_kategori).all()
     
@@ -79,7 +86,8 @@ def katalog():
                          buku_list=buku_list,
                          kategori_list=kategori_list,
                          search=search,
-                         selected_kategori=kategori_id)
+                         selected_kategori=kategori_id,
+                         selected_ketersediaan=ketersediaan)
 
 
 @anggota_bp.route('/detail_buku/<int:id>')

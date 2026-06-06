@@ -51,7 +51,7 @@ media/
 *.min.js
 *.min.css
 
-# IDE
+# Editors
 .vscode/
 .idea/
 *.swp
