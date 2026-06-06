@@ -60,7 +60,7 @@ def katalog():
     kategori_id = request.args.get('kategori', type=int)
     
     # Base query
-    buku_query = Buku.query.filter(Buku.stok > 0) # Atau hapus filter stok jika ingin tampilkan semua
+    buku_query = Buku.query.filter(Buku.stok_tersedia > 0) # Atau hapus filter stok jika ingin tampilkan semua
     
     # Filter Pencarian
     if query:
