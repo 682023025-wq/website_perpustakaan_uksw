@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Kelola Anggota - Perpustakaan UKSW{% endblock %}
+
+{% block content %}
+<!-- Helper Text -->
+<div class="mb-6 bg-white rounded-lg shadow-md border-l-4 border-uksw-blue-500 p-5">
+    <div class="flex items-start">
+        <div class="flex-shrink-0">
+            <i class="fas fa-lightbulb text-yellow-500 text-2xl"></i>
+        </div>
+        <div class="ml-4 flex-1">
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">💡 Apa yang bisa Anda lakukan di sini?</h3>
+            <p class="text-gray-600 leading-relaxed">
+                Kelola data anggota perpustakaan (mahasiswa dan dosen). 
+                Anda dapat menambah anggota baru, mengedit data, atau menonaktifkan akun yang tidak aktif.
+            </p>
+            <ul class="mt-3 space-y-1 text-sm text-gray-600">
+                <li><i class="fas fa-check text-green-500 mr-2"></i>Nonaktifkan akun = soft delete (data tetap ada, status jadi tidak aktif)</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i>Gunakan filter untuk melihat anggota aktif/nonaktif</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Action Bar -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+    <!-- Filter Tabs -->
+    <div class="flex gap-2">
+        <a href="{{ url_for('admin.kelola_anggota', status='aktif') }}" 
+           class="px-4 py-2 rounded-lg font-medium transition-colors {% if request.args.get('status', 'aktif') == 'aktif' %}bg-uksw-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+            Aktif
+        </a>
+        <a href="{{ url_for('admin.kelola_anggota', status='nonaktif') }}" 
+           class="px-4 py-2 rounded-lg font-medium transition-colors {% if request.args.get('status') == 'nonaktif' %}bg-uksw-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+            Nonaktif
+        </a>
+        <a href="{{ url_for('admin.kelola_anggota', status='all') }}" 
+           class="px-4 py-2 rounded-lg font-medium transition-colors {% if request.args.get('status') == 'all' %}bg-uksw-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+            Semua
+        </a>
+    </div>
+    
+    <!-- Add Member Button -->
+    <button onclick="openModal('modalTambahAnggota')" 
+            class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center">
+        <i class="fas fa-plus mr-2"></i>Tambah Anggota Baru
+    </button>
+</div>
+
+<!-- Members Table -->
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
+    {% if anggota and anggota|length > 0 %}
+    <div class="overflow-x-auto table-scroll">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nomor Induk</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Peran</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prodi</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for a in anggota %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-4 py-3 text-sm">
+                        <div class="font-semibold text-gray-800">{{ a.nama_lengkap }}</div>
+                        {% if a.email %}<div class="text-xs text-gray-500">{{ a.email }}</div>{% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ a.nomor_induk }}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold capitalize {% if a.peran == 'dosen' %}bg-purple-100 text-purple-800{% else %}bg-uksw-blue-100 text-uksw-blue-800{% endif %}">
+                            {{ a.peran.replace('_', ' ') }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ a.program_studi or '-' }}</td>
+                    <td class="px-4 py-3 text-sm">
+                        {% if a.status_aktif %}
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Aktif</span>
+                        {% else %}
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">Nonaktif</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="openModal('modalEdit{{ a.id }}')" 
+                                class="text-uksw-blue-600 hover:text-uksw-blue-700 mr-3" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        
+                        {% if a.status_aktif %}
+                        <form method="POST" action="{{ url_for('admin.kelola_anggota') }}" class="inline" onsubmit="return confirm('Nonaktifkan akun ini?')">
+                            <input type="hidden" name="action" value="nonaktifkan">
+                            <input type="hidden" name="id_pengguna" value="{{ a.id }}">
+                            <button type="submit" class="text-red-600 hover:text-red-700" title="Nonaktifkan">
+                                <i class="fas fa-ban"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('admin.kelola_anggota') }}" class="inline" onsubmit="return confirm('Aktifkan kembali akun ini?')">
+                            <input type="hidden" name="action" value="aktifkan">
+                            <input type="hidden" name="id_pengguna" value="{{ a.id }}">
+                            <button type="submit" class="text-green-600 hover:text-green-700" title="Aktifkan">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-12 text-center">
+        <i class="fas fa-users-slash text-6xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500">Tidak ada anggota ditemukan.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Tambah Anggota -->
+<div id="modalTambahAnggota" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-gray-800">Tambah Anggota Baru</h3>
+            <button onclick="closeModal('modalTambahAnggota')" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form method="POST" action="{{ url_for('admin.kelola_anggota') }}" class="p-6 space-y-4">
+            <input type="hidden" name="action" value="tambah">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap *</label>
+                    <input type="text" name="nama_lengkap" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nomor Induk *</label>
+                    <input type="text" name="nomor_induk" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Peran *</label>
+                    <select name="peran" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500">
+                        <option value="mahasiswa">Mahasiswa</option>
+                        <option value="dosen">Dosen</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password *</label>
+                    <input type="password" name="password" required minlength="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Program Studi</label>
+                    <input type="text" name="program_studi" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Fakultas</label>
+                    <input type="text" name="fakultas" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" name="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500">
+                </div>
+            </div>
+            
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeModal('modalTambahAnggota')" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Batal</button>
+                <button type="submit" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Edit untuk setiap anggota (generated dynamically) -->
+{% for a in anggota %}
+<div id="modalEdit{{ a.id }}" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-gray-800">Edit Anggota</h3>
+            <button onclick="closeModal('modalEdit{{ a.id }}')" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form method="POST" action="{{ url_for('admin.kelola_anggota') }}" class="p-6 space-y-4">
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="id_pengguna" value="{{ a.id }}">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
+                    <input type="text" name="nama_lengkap" value="{{ a.nama_lengkap }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nomor Induk</label>
+                    <input type="text" value="{{ a.nomor_induk }}" disabled class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Program Studi</label>
+                    <input type="text" name="program_studi" value="{{ a.program_studi or '' }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Fakultas</label>
+                    <input type="text" name="fakultas" value="{{ a.fakultas or '' }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" name="email" value="{{ a.email or '' }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500">
+                </div>
+            </div>
+            
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeModal('modalEdit{{ a.id }}')" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Batal</button>
+                <button type="submit" class="flex-1 px-4 py-2 bg-uksw-blue-600 hover:bg-uksw-blue-700 text-white rounded-lg">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

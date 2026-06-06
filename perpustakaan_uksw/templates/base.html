@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Perpustakaan UKSW{% endblock %}</title>
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome untuk ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Konfigurasi Tailwind custom -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'uksw-blue': {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        'sage-green': {
+                            50: '#f8faf8',
+                            100: '#e8efe8',
+                            200: '#d4e0d4',
+                            300: '#b8ccb8',
+                            400: '#9bb89b',
+                            500: '#7ea37e',
+                            600: '#6a8f6a',
+                            700: '#567556',
+                            800: '#4a634a',
+                            900: '#3f523f',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom scrollbar untuk tabel */
+        .table-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+        .table-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .table-scroll::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        .table-scroll::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Sidebar transition */
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar-mobile {
+                transform: translateX(-100%);
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 50;
+            }
+            .sidebar-mobile.active {
+                transform: translateX(0);
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-uksw-blue-50 min-h-screen font-sans">
+    
+    <!-- Navbar Mobile (hanya tampil di layar kecil) -->
+    <nav class="md:hidden bg-uksw-blue-700 text-white shadow-lg sticky top-0 z-40">
+        <div class="flex items-center justify-between px-4 py-3">
+            <!-- Hamburger Menu Button -->
+            <button id="hamburger-btn" class="focus:outline-none" aria-label="Toggle menu">
+                <i class="fas fa-bars text-2xl"></i>
+            </button>
+            
+            <!-- Logo/Nama Aplikasi -->
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-book-reader text-xl"></i>
+                <span class="font-bold text-lg">Perpus UKSW</span>
+            </div>
+            
+            <!-- User Menu / Logout -->
+            <div class="relative">
+                {% if current_user.is_authenticated %}
+                <button id="user-menu-btn" class="focus:outline-none">
+                    <i class="fas fa-user-circle text-2xl"></i>
+                </button>
+                {% else %}
+                <a href="{{ url_for('auth.login') }}" class="text-sm hover:text-uksw-blue-200">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Sidebar Desktop + Mobile Overlay -->
+    <div class="flex min-h-screen">
+        
+        <!-- Sidebar Background Overlay (mobile) -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+        
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="sidebar sidebar-mobile bg-uksw-blue-800 text-white w-64 flex-shrink-0">
+            <!-- Header Sidebar -->
+            <div class="p-6 border-b border-uksw-blue-700">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-book-reader text-3xl text-uksw-blue-300"></i>
+                    <div>
+                        <h1 class="font-bold text-xl">Perpustakaan</h1>
+                        <p class="text-xs text-uksw-blue-300">UKSW Salatiga</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Info -->
+            {% if current_user.is_authenticated %}
+            <div class="p-4 border-b border-uksw-blue-700 bg-uksw-blue-900">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-uksw-blue-500 flex items-center justify-center">
+                        <span class="text-lg font-bold">{{ current_user.nama_lengkap[0].upper() }}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-sm truncate">{{ current_user.nama_lengkap }}</p>
+                        <p class="text-xs text-uksw-blue-300 capitalize">{{ current_user.peran.replace('_', ' ') }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Navigation Menu -->
+            <nav class="flex-1 overflow-y-auto py-4">
+                <ul class="space-y-1 px-3">
+                    {% if current_user.is_authenticated %}
+                        <!-- Menu Super Petugas -->
+                        {% if current_user.peran == 'super_petugas' %}
+                        <li>
+                            <a href="{{ url_for('admin.dashboard') }}" 
+                               class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-uksw-blue-700 transition-colors {% if request.endpoint == 'admin.dashboard' %}bg-uksw-blue-700{% endif %}">
+                                <i class="fas fa-tachometer-alt w-5"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('admin.kelola_anggota') }}" 
+                               class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-uksw-blue-700 transition-colors {% if request.endpoint == 'admin.kelola_anggota' %}bg-uksw-blue-700{% endif %}">
+                                <i class="fas fa-users w-5"></i>
+                                <span>Kelola Anggota</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('admin.bantuan_sandi') }}" 
+                               class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-uksw-blue-700 transition-colors {% if request.endpoint == 'admin.bantuan_sandi' %}bg-uksw-blue-700{% endif %}">
+                                <i class="fas fa-key w-5"></i>
+                                <span>Bantuan Sandi</span>
+                            </a>
+                        </li>
+                        
+                        <!-- Menu Petugas -->
+                        {% elif current_user.peran == 'petugas' %}
+                        <li>
+                            <a href="{{ url_for('staf.dashboard') }}" 
+                               class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-uksw-blue-700 transition-colors {% if request.endpoint == 'staf.dashboard' %}bg-uksw-blue-700{% endif %}">
+                                <i class="fas fa-tachometer-alt w-5"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('staf.manajemen_peminjaman') }}" 
+                               class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-uksw-blue-700 transition-colors {% if request.endpoint == 'staf.manajemen_peminjaman' %}bg-uksw-blue-700{% endif %}">
+                                <i class="fas fa-book w-5"></i>
+                                <span>Peminjaman</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('staf.tagihan_denda') }}" 
+                               class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-uksw-blue-700 transition-colors {% if request.endpoint == 'staf.tagihan_denda' %}bg-uksw-blue-700{% endif %}">
+                                <i class="fas fa-file-invoice-dollar w-5"></i>
+                                <span>Tagihan Denda</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('staf.koleksi_buku') }}" 
+                               class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-uksw-blue-700 transition-colors {% if request.endpoint == 'staf.koleksi_buku' %}bg-uksw-blue-700{% endif %}">
+                                <i class="fas fa-books w-5"></i>
+                                <span>Koleksi Buku</span>
+                            </a>
+                        </li>
+                        
+                        <!-- Menu Anggota (Dosen/Mahasiswa) -->
+                        {% else %}
+                        <li>
+                            <a href="{{ url_for('anggota.dashboard') }}" 
+                               class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-uksw-blue-700 transition-colors {% if request.endpoint == 'anggota.dashboard' %}bg-uksw-blue-700{% endif %}">
+                                <i class="fas fa-home w-5"></i>
+                                <span>Beranda</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('anggota.katalog') }}" 
+                               class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-uksw-blue-700 transition-colors {% if request.endpoint == 'anggota.katalog' %}bg-uksw-blue-700{% endif %}">
+                                <i class="fas fa-search w-5"></i>
+                                <span>Katalog Buku</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('anggota.peminjaman_saya') }}" 
+                               class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-uksw-blue-700 transition-colors {% if request.endpoint == 'anggota.peminjaman_saya' %}bg-uksw-blue-700{% endif %}">
+                                <i class="fas fa-book-open w-5"></i>
+                                <span>Peminjaman Saya</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('anggota.reservasi_saya') }}" 
+                               class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-uksw-blue-700 transition-colors {% if request.endpoint == 'anggota.reservasi_saya' %}bg-uksw-blue-700{% endif %}">
+                                <i class="fas fa-clock w-5"></i>
+                                <span>Reservasi Saya</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('anggota.profil') }}" 
+                               class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-uksw-blue-700 transition-colors {% if request.endpoint == 'anggota.profil' %}bg-uksw-blue-700{% endif %}">
+                                <i class="fas fa-user w-5"></i>
+                                <span>Profil Saya</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endif %}
+                </ul>
+            </nav>
+            
+            <!-- Footer Sidebar - Logout -->
+            <div class="p-4 border-t border-uksw-blue-700">
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('auth.logout') }}" 
+                   class="flex items-center justify-center space-x-2 w-full px-4 py-3 bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Keluar</span>
+                </a>
+                {% else %}
+                <a href="{{ url_for('auth.login') }}" 
+                   class="flex items-center justify-center space-x-2 w-full px-4 py-3 bg-uksw-blue-600 hover:bg-uksw-blue-500 rounded-lg transition-colors">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Masuk</span>
+                </a>
+                {% endif %}
+            </div>
+        </aside>
+        
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-x-hidden">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="px-4 py-3 max-w-7xl mx-auto">
+                    {% for category, message in messages %}
+                    <div class="mb-3 p-4 rounded-lg border-l-4 {% if category == 'success' %}bg-green-50 border-green-500 text-green-800{% elif category == 'error' %}bg-red-50 border-red-500 text-red-800{% elif category == 'warning' %}bg-yellow-50 border-yellow-500 text-yellow-800{% else %}bg-blue-50 border-blue-500 text-blue-800{% endif %}">
+                        <div class="flex items-start">
+                            <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% elif category == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} mt-0.5 mr-2"></i>
+                            <span>{{ message }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Page Content -->
+            <div class="p-4 md:p-6 lg:p-8">
+                {% block content %}{% endblock %}
+            </div>
+            
+            <!-- Footer -->
+            <footer class="mt-auto py-6 border-t border-gray-200 bg-white">
+                <div class="max-w-7xl mx-auto px-4 text-center text-gray-600 text-sm">
+                    <p>&copy; {{ now().year if now is defined else '2024' }} Perpustakaan UKSW Salatiga. All rights reserved.</p>
+                    <p class="mt-1">Sistem Informasi Perpustakaan - Dibuat dengan ❤️ untuk komunitas akademik</p>
+                </div>
+            </footer>
+        </main>
+    </div>
+    
+    <!-- JavaScript untuk Toggle Hamburger Menu -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

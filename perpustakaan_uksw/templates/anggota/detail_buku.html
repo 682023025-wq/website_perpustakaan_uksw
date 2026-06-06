@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Detail Buku - Perpustakaan UKSW{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Back Button -->
+    <a href="{{ url_for('anggota.katalog') }}" 
+       class="inline-flex items-center text-uksw-blue-600 hover:text-uksw-blue-700 mb-6 font-medium">
+        <i class="fas fa-arrow-left mr-2"></i>Kembali ke Katalog
+    </a>
+    
+    <!-- Book Detail Card -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+            <!-- Cover -->
+            <div class="md:col-span-1">
+                <div class="aspect-[3/4] bg-gradient-to-br from-uksw-blue-100 to-uksw-blue-200 rounded-lg flex items-center justify-center overflow-hidden">
+                    {% if buku.url_cover %}
+                    <img src="{{ buku.url_cover }}" 
+                         alt="Cover {{ buku.judul }}" 
+                         class="w-full h-full object-cover"
+                         onerror="this.parentElement.innerHTML='<i class=\'fas fa-book text-6xl text-uksw-blue-300\'></i>'">
+                    {% else %}
+                    <i class="fas fa-book text-6xl text-uksw-blue-300"></i>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Info -->
+            <div class="md:col-span-2">
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">{{ buku.judul }}</h1>
+                <p class="text-lg text-gray-600 mb-4">oleh {{ buku.penulis }}</p>
+                
+                <div class="grid grid-cols-2 gap-4 text-sm mb-6">
+                    <div>
+                        <span class="text-gray-500">Penerbit:</span>
+                        <p class="font-semibold">{{ buku.penerbit or '-' }}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Tahun Terbit:</span>
+                        <p class="font-semibold">{{ buku.tahun_terbit or '-' }}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">ISBN:</span>
+                        <p class="font-semibold">{{ buku.isbn or '-' }}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Bahasa:</span>
+                        <p class="font-semibold">{{ buku.bahasa or 'Indonesia' }}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Halaman:</span>
+                        <p class="font-semibold">{{ buku.jumlah_halaman or '-' }}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Kategori:</span>
+                        <p class="font-semibold">{{ buku.kategori.nama_kategori if buku.kategori else '-' }}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Stok:</span>
+                        <p class="font-semibold {% if buku.stok_tersedia > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ buku.stok_tersedia }} buku
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Lokasi Rak:</span>
+                        <p class="font-semibold">{{ buku.lokasi_rak or '-' }}</p>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex gap-3">
+                    {% if buku.stok_tersedia > 0 %}
+                    <button class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-hand-holding mr-2"></i>Pinjam Buku Ini
+                    </button>
+                    {% else %}
+                    <button class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-bell mr-2"></i>Reservasi Buku Ini
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Synopsis -->
+        {% if buku.sinopsis %}
+        <div class="border-t border-gray-200 p-6 bg-gray-50">
+            <h2 class="text-xl font-bold text-gray-800 mb-3">📖 Sinopsis</h2>
+            <p class="text-gray-700 leading-relaxed">{{ buku.sinopsis }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

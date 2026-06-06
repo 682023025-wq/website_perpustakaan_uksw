@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+
+{% block title %}Manajemen Peminjaman - Perpustakaan UKSW{% endblock %}
+
+{% block content %}
+<!-- Helper Text - Penjelasan Halaman -->
+<div class="mb-6 bg-white rounded-lg shadow-md border-l-4 border-uksw-blue-500 p-5">
+    <div class="flex items-start">
+        <div class="flex-shrink-0">
+            <i class="fas fa-lightbulb text-yellow-500 text-2xl"></i>
+        </div>
+        <div class="ml-4 flex-1">
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">💡 Apa yang bisa Anda lakukan di sini?</h3>
+            <p class="text-gray-600 leading-relaxed">
+                Halaman ini membantu Anda mengelola proses peminjaman buku. 
+                <strong>Masukkan Nomor Induk (NIM/NIP)</strong> anggota untuk melihat data dan kuota peminjaman mereka. 
+                Setelah itu, <strong>scan atau masukkan ISBN buku</strong> yang ingin dipinjamkan. 
+                Sistem akan otomatis menghitung tanggal jatuh tempo berdasarkan jenis anggota 
+                (<span class="font-semibold text-uksw-blue-600">Mahasiswa: 14 hari</span>, 
+                <span class="font-semibold text-uksw-blue-600">Dosen: 30 hari</span>).
+            </p>
+            <ul class="mt-3 space-y-1 text-sm text-gray-600">
+                <li><i class="fas fa-check text-green-500 mr-2"></i>Kuota Mahasiswa: maksimal 2 buku</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i>Kuota Dosen: maksimal 10 buku</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i>Stok buku akan berkurang otomatis saat transaksi berhasil</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    
+    <!-- Form Pencarian Anggota (Kiri) -->
+    <div class="lg:col-span-1">
+        <div class="bg-white rounded-lg shadow-md p-6 sticky top-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-user-search text-uksw-blue-500 mr-2"></i>
+                Cari Anggota
+            </h2>
+            
+            <form method="POST" action="{{ url_for('staf.manajemen_peminjaman') }}" class="space-y-4">
+                <input type="hidden" name="action" value="cari_anggota">
+                
+                <div>
+                    <label for="nomor_induk" class="block text-sm font-medium text-gray-700 mb-2">
+                        Nomor Induk (NIM/NIP)
+                    </label>
+                    <input type="text" 
+                           id="nomor_induk" 
+                           name="nomor_induk" 
+                           required
+                           placeholder="Masukkan NIM atau NIP..."
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent transition-all"
+                           autocomplete="off">
+                </div>
+                
+                <button type="submit" 
+                        class="w-full bg-uksw-blue-600 hover:bg-uksw-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                    <i class="fas fa-search mr-2"></i>
+                    Cari Anggota
+                </button>
+            </form>
+            
+            <!-- Info Anggota (jika ditemukan) -->
+            {% if anggota %}
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <div class="bg-uksw-blue-50 rounded-lg p-4">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-uksw-blue-500 flex items-center justify-center text-white text-xl font-bold">
+                            {{ anggota.nama_lengkap[0].upper() }}
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-800">{{ anggota.nama_lengkap }}</h3>
+                            <p class="text-sm text-gray-600">{{ anggota.nomor_induk }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Peran:</span>
+                            <span class="font-semibold capitalize">{{ anggota.peran.replace('_', ' ') }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Program Studi:</span>
+                            <span class="font-semibold">{{ anggota.program_studi or '-' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Fakultas:</span>
+                            <span class="font-semibold">{{ anggota.fakultas or '-' }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Kuota Status -->
+                    <div class="mt-4 pt-4 border-t border-uksw-blue-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-gray-600">Kuota Peminjaman</span>
+                            <span class="text-sm font-bold text-uksw-blue-600">{{ sisa_kuota }} / {{ quota }}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="bg-uksw-blue-500 h-3 rounded-full transition-all duration-300" 
+                                 style="width: {{ (active_loans / quota * 100) if quota > 0 else 0 }}%"></div>
+                        </div>
+                        {% if sisa_kuota == 0 %}
+                        <p class="mt-2 text-xs text-red-600 font-semibold">
+                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            Kuota sudah penuh!
+                        </p>
+                        {% else %}
+                        <p class="mt-2 text-xs text-green-600 font-semibold">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            Masih bisa meminjam {{ sisa_kuota }} buku lagi
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Form Pencarian Buku & Transaksi (Kanan - Lebih Lebar) -->
+    <div class="lg:col-span-2">
+        {% if anggota %}
+        <!-- Panel Transaksi Peminjaman -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-book text-uksw-blue-500 mr-2"></i>
+                Proses Peminjaman
+            </h2>
+            
+            <!-- Step 1: Cari Buku -->
+            <form method="POST" action="{{ url_for('staf.manajemen_peminjaman') }}" class="mb-6">
+                <input type="hidden" name="action" value="cari_buku">
+                <input type="hidden" name="id_anggota" value="{{ anggota.id }}">
+                
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label for="isbn" class="block text-sm font-medium text-gray-700 mb-2">
+                            ISBN Buku
+                        </label>
+                        <input type="text" 
+                               id="isbn" 
+                               name="isbn" 
+                               required
+                               placeholder="Scan atau ketik ISBN..."
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent transition-all"
+                               autocomplete="off">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" 
+                                class="bg-uksw-blue-600 hover:bg-uksw-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Step 2: Konfirmasi Peminjaman (jika buku ditemukan) -->
+            {% if buku_selected %}
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div class="flex items-start">
+                    <i class="fas fa-check-circle text-green-500 text-2xl mr-3 mt-1"></i>
+                    <div class="flex-1">
+                        <h4 class="font-bold text-green-800 mb-2">Buku Ditemukan!</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <p class="text-gray-600">Judul:</p>
+                                <p class="font-semibold text-gray-800">{{ buku_selected.judul }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Penulis:</p>
+                                <p class="font-semibold text-gray-800">{{ buku_selected.penulis }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Stok Tersedia:</p>
+                                <p class="font-semibold {% if buku_selected.stok_tersedia > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {{ buku_selected.stok_tersedia }} buku
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Lokasi Rak:</p>
+                                <p class="font-semibold text-gray-800">{{ buku_selected.lokasi_rak or '-' }}</p>
+                            </div>
+                        </div>
+                        
+                        {% if buku_selected.stok_tersedia > 0 and sisa_kuota > 0 %}
+                        <!-- Form Konfirmasi Peminjaman -->
+                        <form method="POST" action="{{ url_for('staf.manajemen_peminjaman') }}" class="mt-4 pt-4 border-t border-green-200">
+                            <input type="hidden" name="action" value="proses_pinjam">
+                            <input type="hidden" name="id_anggota" value="{{ anggota.id }}">
+                            <input type="hidden" name="id_buku" value="{{ buku_selected.id }}">
+                            
+                            <div class="mb-4">
+                                <label for="tgl_pinjam" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Tanggal Peminjaman
+                                </label>
+                                <input type="date" 
+                                       id="tgl_pinjam" 
+                                       name="tgl_pinjam" 
+                                       value="{{ today.strftime('%Y-%m-%d') if today is defined else '' }}"
+                                       class="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500">
+                            </div>
+                            
+                            <div class="bg-white rounded-lg p-3 mb-4">
+                                <p class="text-sm text-gray-600 mb-2">
+                                    <i class="fas fa-info-circle text-uksw-blue-500 mr-2"></i>
+                                    Jatuh Tempo: 
+                                    <span class="font-bold text-uksw-blue-600">
+                                        {% if anggota.peran == 'mahasiswa' %}+14 hari{% elif anggota.peran == 'dosen' %}+30 hari{% endif %}
+                                    </span>
+                                </p>
+                            </div>
+                            
+                            <button type="submit" 
+                                    onclick="return confirm('Konfirmasi peminjaman buku ini?')"
+                                    class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                                <i class="fas fa-check mr-2"></i>
+                                Konfirmasi Peminjaman
+                            </button>
+                        </form>
+                        {% else %}
+                        <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            {% if buku_selected.stok_tersedia <= 0 %}
+                            <p class="text-red-600 font-semibold">
+                                <i class="fas fa-times-circle mr-2"></i>
+                                Maaf, stok buku ini tidak tersedia.
+                            </p>
+                            {% else %}
+                            <p class="text-red-600 font-semibold">
+                                <i class="fas fa-times-circle mr-2"></i>
+                                Anggota sudah mencapai batas peminjaman.
+                            </p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Riwayat Peminjaman Aktif Anggota -->
+        {% if peminjaman_aktif and peminjaman_aktif|length > 0 %}
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-history text-uksw-blue-500 mr-2"></i>
+                Peminjaman Aktif Anggota Ini
+            </h3>
+            
+            <div class="overflow-x-auto table-scroll">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Judul Buku</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tgl Pinjam</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jatuh Tempo</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for p in peminjaman_aktif %}
+                        <tr>
+                            <td class="px-4 py-3 text-sm text-gray-800">{{ p.buku.judul[:40] }}{% if p.buku.judul|length > 40 %}...{% endif %}</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">{{ p.tgl_pinjam.strftime('%d/%m/%Y') }}</td>
+                            <td class="px-4 py-3 text-sm {% if p.is_overdue() %}text-red-600 font-semibold{% else %}text-gray-600{% endif %}">
+                                {{ p.tgl_jatuh_tempo.strftime('%d/%m/%Y') }}
+                            </td>
+                            <td class="px-4 py-3 text-sm">
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold {% if p.status_transaksi == 'dipinjam' %}bg-green-100 text-green-800{% elif p.status_transaksi == 'terlambat' %}bg-red-100 text-red-800{% endif %}">
+                                    {{ p.status_transaksi|capitalize }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <!-- Empty State - Belum ada anggota yang dipilih -->
+        <div class="bg-white rounded-lg shadow-md p-12 text-center">
+            <i class="fas fa-arrow-left text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-600 mb-2">Pilih Anggota Terlebih Dahulu</h3>
+            <p class="text-gray-500">Masukkan Nomor Induk di panel sebelah kiri untuk memulai proses peminjaman.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
