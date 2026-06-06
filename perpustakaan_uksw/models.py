@@ -53,39 +53,8 @@ class Pengguna(UserMixin, db.Model):
         self.kata_sandi_hash = generate_password_hash(password)
     
     def check_password(self, password):
-        """
-        Verifikasi password dengan hash yang tersimpan.
-        Menangani kasus jika hash kosong, tidak sesuai format, atau masih plain text.
-        """
-        if not self.kata_sandi_hash or self.kata_sandi_hash.strip() == '':
-            return False
-        
-        # Cek apakah string hash terlihat valid (mengandung '$' untuk format werkzeug: method$salt$hash)
-        if '$' not in self.kata_sandi_hash:
-            # Kemungkinan password masih plain text di DB (data lama/testing)
-            # Bandingkan langsung sebagai fallback (case-sensitive)
-            try:
-                return self.kata_sandi_hash == password
-            except Exception:
-                return False
-        
-        try:
-            return check_password_hash(self.kata_sandi_hash, password)
-        except ValueError as e:
-            # Jika error format hash (misal: method tidak dikenali), coba bandingkan sebagai plain text
-            print(f"Warning: Hash format tidak valid untuk user {self.nomor_induk}. Error: {e}")
-            # Fallback: bandingkan string langsung (untuk data testing dengan hash dummy)
-            try:
-                return self.kata_sandi_hash == password
-            except Exception:
-                return False
-        except Exception as e:
-            # Error lainnya, coba bandingkan sebagai plain text
-            print(f"Error saat check password: {e}")
-            try:
-                return self.kata_sandi_hash == password
-            except Exception:
-                return False
+        """Verifikasi password dengan hash yang tersimpan"""
+        return check_password_hash(self.kata_sandi_hash, password)
     
     @property
     def is_active(self):
