@@ -31,13 +31,29 @@
         </div>
         <div class="mt-4">
             <div class="w-full bg-gray-200 rounded-full h-2">
-                <!-- /* width: {{ (sisa_kuota / kuota * 100) if kuota > 0 else 0 }}% */ -->
                 <div class="bg-uksw-blue-500 h-2 rounded-full transition-all duration-300" 
                      style="width: {{ (sisa_kuota / kuota * 100) if kuota > 0 else 0 }}%"></div>
             </div>
         </div>
     </div>
     
+        
+    <!-- Wishlist Card -->
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-pink-500">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 mb-1">Wishlist Buku</p>
+                <p class="text-3xl font-bold text-gray-800">{{ wishlist_count or 0 }}</p>
+            </div>
+            <div class="w-14 h-14 bg-pink-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-heart text-2xl text-pink-600"></i>
+            </div>
+        </div>
+        <a href="{{ url_for('anggota.wishlist_saya') }}" 
+           class="mt-4 inline-block text-sm text-pink-600 hover:text-pink-700 font-medium">
+            Lihat wishlist <i class="fas fa-arrow-right ml-1"></i>
+        </a>
+    </div>
     <!-- Peminjaman Aktif Card -->
     <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
         <div class="flex items-center justify-between">
@@ -54,120 +70,137 @@
             Lihat detail <i class="fas fa-arrow-right ml-1"></i>
         </a>
     </div>
-    
-    <!-- Wishlist Card -->
-    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+
+        <!-- Kartu Reservasi Aktif -->
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-orange-500">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm text-gray-500 mb-1">Wishlist Buku</p>
-                <p class="text-3xl font-bold text-gray-800">{{ wishlist_count or 0 }}</p>
+                <p class="text-sm text-gray-500 mb-1">Reservasi Aktif</p>
+                <p class="text-3xl font-bold text-gray-800">{{ reservasi_aktif }}</p>
             </div>
-            <div class="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center">
-                <i class="fas fa-heart text-2xl text-purple-600"></i>
+            <div class="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-bell text-2xl text-orange-600"></i>
             </div>
         </div>
-        <a href="{{ url_for('anggota.wishlist_saya') }}" 
-           class="mt-4 inline-block text-sm text-purple-600 hover:text-purple-700 font-medium">
-            Lihat wishlist <i class="fas fa-arrow-right ml-1"></i>
+        
+        {% if reservasi_aktif > 0 %}
+        <a href="{{ url_for('anggota.reservasi_saya', status='aktif') }}" 
+           class="mt-4 inline-block text-sm text-orange-600 hover:text-orange-700 font-medium">
+            Cek status antrian <i class="fas fa-arrow-right ml-1"></i>
         </a>
-    </div>
-    
-    <!-- Quick Action Card -->
-    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm text-gray-500 mb-1">Aksi Cepat</p>
-                <p class="text-lg font-bold text-gray-800">Cari Buku</p>
-            </div>
-            <div class="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center">
-                <i class="fas fa-search text-2xl text-purple-600"></i>
-            </div>
-        </div>
+        {% else %}
         <a href="{{ url_for('anggota.katalog') }}" 
-           class="mt-4 inline-block px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors">
-            <i class="fas fa-search mr-2"></i>Jelajahi Katalog
+           class="mt-4 inline-block text-sm text-gray-400 hover:text-orange-600 font-medium transition-colors">
+            Buat reservasi baru <i class="fas fa-plus ml-1"></i>
         </a>
+        {% endif %}
     </div>
 </div>
-
-<!-- Helper Text -->
-<div class="mb-6 bg-white rounded-lg shadow-md border-l-4 border-uksw-blue-500 p-5">
-    <div class="flex items-start">
-        <div class="flex-shrink-0">
-            <i class="fas fa-lightbulb text-yellow-500 text-2xl"></i>
-        </div>
-        <div class="ml-4 flex-1">
-            <h3 class="text-lg font-semibold text-gray-800 mb-2">💡 Apa yang bisa Anda lakukan di sini?</h3>
-            <p class="text-gray-600 leading-relaxed">
-                Dashboard ini memberikan ringkasan aktivitas peminjaman Anda. 
-                Gunakan menu di samping untuk mengakses berbagai fitur perpustakaan.
-            </p>
-            <ul class="mt-3 space-y-1 text-sm text-gray-600">
-                <li><i class="fas fa-check text-green-500 mr-2"></i>Pantau kuota dan tanggal jatuh tempo peminjaman</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i>Tambahkan buku ke wishlist jika stok habis</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i>Dapatkan notifikasi ketika buku wishlist tersedia</li>
-            </ul>
-        </div>
-    </div>
-</div>
-
-<!-- Recent Activity -->
-<div class="bg-white rounded-lg shadow-md overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-        <h2 class="text-xl font-bold text-gray-800 flex items-center">
-            <i class="fas fa-history text-uksw-blue-500 mr-2"></i>
-            Riwayat Peminjaman Terakhir
-        </h2>
-    </div>
+<!-- Content Grid: Riwayat & Wishlist -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     
-    {% if riwayat_terakhir and riwayat_terakhir|length > 0 %}
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Judul Buku</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tgl Pinjam</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jatuh Tempo</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                {% for p in riwayat_terakhir %}
-                <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="px-4 py-3 text-sm text-gray-800">{{ p.buku.judul[:40] }}{% if p.buku.judul|length > 40 %}...{% endif %}</td>
-                    <td class="px-4 py-3 text-sm text-gray-600">{{ p.tgl_pinjam.strftime('%d/%m/%Y') }}</td>
-                    <td class="px-4 py-3 text-sm {% if p.is_overdue() %}text-red-600 font-semibold{% else %}text-gray-600{% endif %}">
-                        {{ p.tgl_jatuh_tempo.strftime('%d/%m/%Y') }}
-                    </td>
-                    <td class="px-4 py-3 text-sm">
-                        <span class="px-2 py-1 rounded-full text-xs font-semibold 
-                            {% if p.status_transaksi == 'dipinjam' %}bg-green-100 text-green-800
-                            {% elif p.status_transaksi == 'terlambat' %}bg-red-100 text-red-800
-                            {% elif p.status_transaksi == 'kembali' %}bg-gray-100 text-gray-800
-                            {% endif %}">
-                            {{ p.status_transaksi|capitalize }}
-                        </span>
-                    </td>
-                </tr>
+    <!-- Left Column: Recent Loans (Lebar 2/3) -->
+    <div class="lg:col-span-2 bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                <i class="fas fa-history text-uksw-blue-500 mr-2"></i>
+                Riwayat Peminjaman Terakhir
+            </h2>
+            <a href="{{ url_for('anggota.peminjaman_saya') }}" class="text-xs text-uksw-blue-600 hover:underline">Lihat Semua</a>
+        </div>
+        
+        {% if riwayat_terakhir and riwayat_terakhir|length > 0 %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Judul Buku</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jatuh Tempo</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for p in riwayat_terakhir %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-4 py-3 text-sm text-gray-800 font-medium">{{ p.buku.judul[:35] }}{% if p.buku.judul|length > 35 %}...{% endif %}</td>
+                        <td class="px-4 py-3 text-sm {% if p.is_overdue() %}text-red-600 font-bold{% else %}text-gray-600{% endif %}">
+                            {{ p.tgl_jatuh_tempo.strftime('%d/%m/%Y') }}
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold 
+                                {% if p.status_transaksi == 'dipinjam' %}bg-green-100 text-green-800
+                                {% elif p.status_transaksi == 'terlambat' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ p.status_transaksi|capitalize }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-8 text-center">
+            <i class="fas fa-book-open text-4xl text-gray-300 mb-2"></i>
+            <p class="text-gray-500 text-sm">Belum ada riwayat peminjaman.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right Column: Top Wishlist (Lebar 1/3) -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col h-full">
+        <div class="px-6 py-4 border-b border-gray-200 bg-pink-50 flex justify-between items-center">
+            <h2 class="text-lg font-bold text-gray-800 flex items-center">
+                <i class="fas fa-heart text-pink-500 mr-2"></i>
+                Wishlist Terbaru
+            </h2>
+            <a href="{{ url_for('anggota.wishlist_saya') }}" class="text-xs text-pink-600 hover:underline">Lihat Semua</a>
+        </div>
+
+        <div class="p-4 flex-1 overflow-y-auto max-h-[400px]">
+            {% if wishlist_items_dashboard and wishlist_items_dashboard|length > 0 %}
+            <div class="space-y-3">
+                {% for item in wishlist_items_dashboard %}
+                <div class="flex items-start gap-3 p-3 rounded-lg hover:bg-pink-50 transition-colors border border-transparent hover:border-pink-100 group">
+                    <!-- Cover Mini -->
+                    <div class="w-12 h-16 bg-gray-200 rounded flex-shrink-0 overflow-hidden">
+                        {% if item.buku.url_cover %}
+                        <img src="{{ item.buku.url_cover }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center"><i class="fas fa-book text-gray-400 text-xs"></i></div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Info -->
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-sm font-semibold text-gray-800 line-clamp-2 group-hover:text-pink-600 transition-colors">
+                            {{ item.buku.judul }}
+                        </h4>
+                        <p class="text-xs text-gray-500 mt-1">{{ item.buku.penulis }}</p>
+                        
+                        <div class="flex items-center gap-2 mt-2">
+                            {% if item.buku.stok_tersedia > 0 %}
+                            <span class="text-[10px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">Tersedia</span>
+                            <a href="{{ url_for('anggota.detail_buku', id=item.buku.id) }}" class="text-[10px] text-uksw-blue-600 hover:underline">Pinjam</a>
+                            {% else %}
+                            <span class="text-[10px] px-1.5 py-0.5 bg-red-100 text-red-700 rounded font-medium">Habis</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <i class="far fa-heart text-4xl text-pink-200 mb-3"></i>
+                <p class="text-gray-500 text-sm mb-3">Wishlist Anda kosong.</p>
+                <a href="{{ url_for('anggota.katalog') }}" class="inline-block px-3 py-1.5 bg-pink-100 hover:bg-pink-200 text-pink-700 text-xs font-medium rounded transition-colors">
+                    <i class="fas fa-plus mr-1"></i>Tambah Buku
+                </a>
+            </div>
+            {% endif %}
+        </div>
     </div>
-    <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
-        <a href="{{ url_for('anggota.peminjaman_saya') }}" 
-           class="text-sm text-uksw-blue-600 hover:text-uksw-blue-700 font-medium">
-            Lihat semua riwayat <i class="fas fa-arrow-right ml-1"></i>
-        </a>
-    </div>
-    {% else %}
-    <div class="p-12 text-center">
-        <i class="fas fa-book-open text-6xl text-gray-300 mb-4"></i>
-        <p class="text-gray-500">Belum ada riwayat peminjaman.</p>
-        <a href="{{ url_for('anggota.katalog') }}" 
-           class="mt-4 inline-block px-4 py-2 bg-uksw-blue-600 hover:bg-uksw-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
-            Mulai meminjam buku
-        </a>
-    </div>
-    {% endif %}
+
 </div>
 {% endblock %}

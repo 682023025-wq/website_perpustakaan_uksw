@@ -3,216 +3,189 @@
 {% block title %}Profil Saya - Perpustakaan UKSW{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <!-- Helper Text -->
-    <div class="mb-6 bg-white rounded-lg shadow-md border-l-4 border-uksw-blue-500 p-5">
-        <div class="flex items-start">
-            <div class="flex-shrink-0">
-                <i class="fas fa-lightbulb text-yellow-500 text-2xl"></i>
-            </div>
-            <div class="ml-4 flex-1">
-                <h3 class="text-lg font-semibold text-gray-800 mb-2">💡 Apa yang bisa Anda lakukan di sini?</h3>
-                <p class="text-gray-600 leading-relaxed">
-                    Kelola informasi profil Anda dan ubah kata sandi untuk keamanan akun.
-                    Pastikan data kontak seperti email selalu diperbarui agar tidak melewatkan notifikasi penting.
-                </p>
-            </div>
-        </div>
+<div class="max-w-6xl mx-auto">
+    
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-800">Pengaturan Akun</h1>
+        <p class="text-gray-500">Kelola informasi pribadi dan keamanan akun Anda.</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Profil Info Card -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                <i class="fas fa-user text-uksw-blue-500 mr-2"></i>
-                Informasi Pribadi
-            </h2>
-            
-            <div class="space-y-4">
-                <div class="flex items-center gap-4 mb-6">
-                    <div class="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-uksw-blue-500 to-uksw-blue-600 flex items-center justify-center">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Left Column: Profile Card (Read Only) -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden sticky top-6">
+                <div class="bg-gradient-to-r from-uksw-blue-600 to-uksw-blue-700 h-24"></div>
+                <div class="px-6 pb-6 text-center relative">
+                    <!-- Avatar -->
+                    <div class="w-24 h-24 mx-auto -mt-12 rounded-full border-4 border-white bg-white shadow-lg overflow-hidden flex items-center justify-center bg-gray-100">
                         {% if current_user.foto_profil %}
                             {% if current_user.foto_profil.startswith('http') %}
-                                <img src="{{ current_user.foto_profil }}" alt="{{ current_user.nama_lengkap }}" class="w-full h-full object-cover">
+                                <img src="{{ current_user.foto_profil }}" alt="Profile" class="w-full h-full object-cover">
                             {% else %}
-                                <img src="{{ url_for('static', filename=current_user.foto_profil) }}" alt="{{ current_user.nama_lengkap }}" class="w-full h-full object-cover">
+                                <img src="{{ url_for('static', filename=current_user.foto_profil) }}" alt="Profile" class="w-full h-full object-cover">
                             {% endif %}
                         {% else %}
-                            <span class="text-white text-3xl font-bold">{{ current_user.nama_lengkap[0].upper() }}</span>
+                            <span class="text-3xl font-bold text-uksw-blue-600">{{ current_user.nama_lengkap[0].upper() }}</span>
                         {% endif %}
                     </div>
-                    <div>
-                        <h3 class="font-bold text-lg text-gray-800">{{ current_user.nama_lengkap }}</h3>
-                        <p class="text-sm text-gray-500 capitalize">{{ current_user.peran.replace('_', ' ') }}</p>
+                    
+                    <h2 class="mt-4 text-xl font-bold text-gray-800">{{ current_user.nama_lengkap }}</h2>
+                    <p class="text-sm text-gray-500 capitalize mb-4">{{ current_user.peran.replace('_', ' ') }}</p>
+                    
+                    <div class="border-t border-gray-100 pt-4 text-left space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">NIM/NIP</span>
+                            <span class="font-semibold text-gray-800">{{ current_user.nomor_induk }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Prodi</span>
+                            <span class="font-semibold text-gray-800">{{ current_user.program_studi or '-' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Fakultas</span>
+                            <span class="font-semibold text-gray-800">{{ current_user.fakultas or '-' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Email</span>
+                            <span class="font-semibold text-gray-800 truncate max-w-[150px]">{{ current_user.email or '-' }}</span>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <span class="text-gray-500">Nomor Induk:</span>
-                        <p class="font-semibold text-gray-800">{{ current_user.nomor_induk }}</p>
-                    </div>
-                    <div>
-                        <span class="text-gray-500">Program Studi:</span>
-                        <p class="font-semibold text-gray-800">{{ current_user.program_studi or '-' }}</p>
-                    </div>
-                    <div>
-                        <span class="text-gray-500">Fakultas:</span>
-                        <p class="font-semibold text-gray-800">{{ current_user.fakultas or '-' }}</p>
-                    </div>
-                    <div>
-                        <span class="text-gray-500">Email:</span>
-                        <p class="font-semibold text-gray-800">{{ current_user.email or '-' }}</p>
-                    </div>
-                </div>
-                
-                <div class="pt-4 border-t border-gray-200">
-                    <p class="text-xs text-gray-500">
-                        <i class="fas fa-calendar mr-1"></i>
-                        Bergabung sejak {{ current_user.tanggal_dibuat.strftime('%d %B %Y') if current_user.tanggal_dibuat else '-' }}
-                    </p>
                 </div>
             </div>
         </div>
-        
-        <!-- Update Profil Form -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                <i class="fas fa-edit text-uksw-blue-500 mr-2"></i>
-                Edit Profil
-            </h2>
+
+        <!-- Right Column: Forms -->
+        <div class="lg:col-span-2 space-y-6">
             
-            <form method="POST" action="{{ url_for('anggota.profil') }}" enctype="multipart/form-data" class="space-y-4">
-                <input type="hidden" name="action" value="update_profil">
+            <!-- Form Edit Profil -->
+            <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+                <h3 class="text-lg font-bold text-gray-800 mb-6 flex items-center pb-4 border-b border-gray-100">
+                    <i class="fas fa-user-edit text-uksw-blue-500 mr-2"></i> Edit Informasi Pribadi
+                </h3>
                 
-                <!-- Foto Profil Upload -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Foto Profil</label>
-                    <div class="flex items-start gap-4">
-                        <div class="w-20 h-20 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
-                            {% if current_user.foto_profil %}
-                                {% if current_user.foto_profil.startswith('http') %}
-                                    <img src="{{ current_user.foto_profil }}" alt="Foto saat ini" class="w-full h-full object-cover">
-                                {% else %}
-                                    <img src="{{ url_for('static', filename=current_user.foto_profil) }}" alt="Foto saat ini" class="w-full h-full object-cover">
-                                {% endif %}
-                            {% else %}
-                                <div class="w-full h-full flex items-center justify-center text-gray-400">
-                                    <i class="fas fa-user text-2xl"></i>
+                <form method="POST" action="{{ url_for('anggota.profil') }}" enctype="multipart/form-data" class="space-y-5">
+                    <input type="hidden" name="action" value="update_profil">
+                    
+                    <!-- Upload Foto Section -->
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Foto Profil</label>
+                        <div class="flex flex-col md:flex-row gap-6 items-start">
+                            <!-- Preview Image -->
+                            <div class="w-24 h-24 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0 border border-gray-300">
+                                <img id="preview-img" src="{% if current_user.foto_profil %}{% if current_user.foto_profil.startswith('http') %}{{ current_user.foto_profil }}{% else %}{{ url_for('static', filename=current_user.foto_profil) }}{% endif %}{% else %}data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E{% endif %}" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            
+                            <div class="flex-1 w-full space-y-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Upload File Baru</label>
+                                    <input type="file" id="foto_upload" name="foto_upload" accept="image/*"
+                                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-uksw-blue-50 file:text-uksw-blue-700 hover:file:bg-uksw-blue-100 transition-colors">
                                 </div>
-                            {% endif %}
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-xs text-gray-500 mb-2">Pilih salah satu:</p>
-                            <input type="url" 
-                                   name="foto_url" 
-                                   placeholder="https://contoh.com/foto.jpg"
-                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 mb-2"
-                                   aria-label="URL Foto">
-                            <span class="text-xs text-gray-400 block">atau</span>
-                            <input type="file" 
-                                   name="foto_upload" 
-                                   accept="image/*"
-                                   class="w-full text-sm mt-2"
-                                   aria-label="Upload Foto">
-                            <p class="text-xs text-gray-400 mt-1">Max 5MB. Format: JPG, PNG, GIF, WebP</p>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-gray-400 text-xs">atau URL</span>
+                                    <input type="url" name="foto_url" placeholder="https://..."
+                                           class="w-full pl-16 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent">
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
+
+                    <!-- Input Fields Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Program Studi</label>
+                            <input type="text" name="program_studi" value="{{ current_user.program_studi or '' }}"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Fakultas</label>
+                            <input type="text" name="fakultas" value="{{ current_user.fakultas or '' }}"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent transition-all">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email Aktif</label>
+                            <input type="email" name="email" value="{{ current_user.email or '' }}"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent transition-all">
+                            <p class="text-xs text-gray-400 mt-1">Digunakan untuk notifikasi reservasi dan jatuh tempo.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-2">
+                        <button type="submit" class="bg-uksw-blue-600 hover:bg-uksw-blue-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors shadow-sm flex items-center">
+                            <i class="fas fa-save mr-2"></i> Simpan Perubahan
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Form Ganti Password -->
+            <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+                <h3 class="text-lg font-bold text-gray-800 mb-6 flex items-center pb-4 border-b border-gray-100">
+                    <i class="fas fa-lock text-red-500 mr-2"></i> Keamanan Akun
+                </h3>
                 
-                <div>
-                    <label for="program_studi" class="block text-sm font-medium text-gray-700 mb-2">
-                        Program Studi
-                    </label>
-                    <input type="text" 
-                           id="program_studi" 
-                           name="program_studi" 
-                           value="{{ current_user.program_studi or '' }}"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent">
-                </div>
-                
-                <div>
-                    <label for="fakultas" class="block text-sm font-medium text-gray-700 mb-2">
-                        Fakultas
-                    </label>
-                    <input type="text" 
-                           id="fakultas" 
-                           name="fakultas" 
-                           value="{{ current_user.fakultas or '' }}"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent">
-                </div>
-                
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-                        Email
-                    </label>
-                    <input type="email" 
-                           id="email" 
-                           name="email" 
-                           value="{{ current_user.email or '' }}"
-                           placeholder="email@anda.com"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent">
-                </div>
-                
-                <button type="submit" 
-                        class="w-full bg-uksw-blue-600 hover:bg-uksw-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
-                    <i class="fas fa-save mr-2"></i>Simpan Perubahan
-                </button>
-            </form>
+                <form method="POST" action="{{ url_for('anggota.profil') }}" class="max-w-lg space-y-4">
+                    <input type="hidden" name="action" value="ganti_password">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Kata Sandi Saat Ini</label>
+                        <input type="password" name="password_lama" required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kata Sandi Baru</label>
+                            <input type="password" name="password_baru" id="new_pass" required minlength="6"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Konfirmasi</label>
+                            <input type="password" name="konfirmasi_password" id="confirm_pass" required minlength="6"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all">
+                        </div>
+                    </div>
+                    
+                    <div class="pt-2">
+                        <button type="submit" onclick="return checkPasswordMatch()"
+                                class="bg-white border border-red-500 text-red-500 hover:bg-red-50 font-semibold py-2.5 px-6 rounded-lg transition-colors shadow-sm flex items-center">
+                            <i class="fas fa-key mr-2"></i> Ubah Kata Sandi
+                        </button>
+                    </div>
+                </form>
+            </div>
+
         </div>
-    </div>
-    
-    <!-- Change Password Section -->
-    <div class="mt-6 bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
-            <i class="fas fa-lock text-red-500 mr-2"></i>
-            Ganti Kata Sandi
-        </h2>
-        
-        <form method="POST" action="{{ url_for('anggota.profil') }}" class="max-w-md space-y-4">
-            <input type="hidden" name="action" value="ganti_password">
-            
-            <div>
-                <label for="password_lama" class="block text-sm font-medium text-gray-700 mb-2">
-                    Kata Sandi Saat Ini
-                </label>
-                <input type="password" 
-                       id="password_lama" 
-                       name="password_lama" 
-                       required
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent">
-            </div>
-            
-            <div>
-                <label for="password_baru" class="block text-sm font-medium text-gray-700 mb-2">
-                    Kata Sandi Baru
-                </label>
-                <input type="password" 
-                       id="password_baru" 
-                       name="password_baru" 
-                       required
-                       minlength="6"
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent">
-            </div>
-            
-            <div>
-                <label for="konfirmasi_password" class="block text-sm font-medium text-gray-700 mb-2">
-                    Konfirmasi Kata Sandi Baru
-                </label>
-                <input type="password" 
-                       id="konfirmasi_password" 
-                       name="konfirmasi_password" 
-                       required
-                       minlength="6"
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uksw-blue-500 focus:border-transparent">
-            </div>
-            
-            <button type="submit" 
-                    onclick="return confirm('Apakah Anda yakin ingin mengubah kata sandi?')"
-                    class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
-                <i class="fas fa-key mr-2"></i>Ubah Kata Sandi
-            </button>
-        </form>
     </div>
 </div>
+
+<!-- Script untuk Preview Gambar & Validasi Password -->
+<script>
+    // Preview Image Upload
+    document.getElementById('foto_upload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('preview-img').src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Simple Password Match Check
+    function checkPasswordMatch() {
+        const pass = document.getElementById('new_pass').value;
+        const confirm = document.getElementById('confirm_pass').value;
+        
+        if (pass !== confirm) {
+            alert("Kata sandi baru dan konfirmasi tidak cocok!");
+            return false;
+        }
+        return true;
+    }
+</script>
 {% endblock %}

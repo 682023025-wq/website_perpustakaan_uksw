@@ -9,15 +9,13 @@ from datetime import date, timedelta
 
 anggota_bp = Blueprint('anggota', __name__, template_folder='../templates/anggota')
 
-
 @anggota_bp.route('/dashboard')
 @login_required
 def dashboard():
     """
     Dashboard Anggota (Mahasiswa/Dosen)
-    Menampilkan ringkasan aktivitas peminjaman
+    Menampilkan ringkasan aktivitas peminjaman dan wishlist terbaru
     """
-    # Dapatkan data pengguna saat ini
     user = current_user
 
     # Hitung statistik pribadi
@@ -41,6 +39,11 @@ def dashboard():
     # Hitung jumlah wishlist
     wishlist_count = user.wishlist_items.count()
 
+    # BARU: Ambil 5 item wishlist terbaru untuk dashboard
+    wishlist_items_dashboard = user.wishlist_items.order_by(
+        Wishlist.tanggal_ditambahkan.desc()
+    ).limit(5).all()
+
     return render_template('anggota/dashboard.html',
                          user=user,
                          peminjaman_aktif=peminjaman_aktif,
@@ -48,23 +51,25 @@ def dashboard():
                          sisa_kuota=sisa_kuota,
                          reservasi_aktif=reservasi_aktif,
                          wishlist_count=wishlist_count,
-                         riwayat_terakhir=riwayat_terakhir)
+                         riwayat_terakhir=riwayat_terakhir,
+                         wishlist_items_dashboard=wishlist_items_dashboard)
+
 
 
 @anggota_bp.route('/katalog')
 @login_required
 def katalog():
     """
-    Katalog Buku Perpustakaan
-    Grid buku responsive dengan fitur pencarian dan filter
-    Tombol "Pinjam" jika stok>0, "Wishlist" jika stok=0
+    Katalog Buku Perpustakaan dengan Filter Wishlist
     """
     search = request.args.get('search', '')
     kategori_id = request.args.get('kategori', type=int)
     ketersediaan = request.args.get('ketersediaan', '')
+    wishlist_only = request.args.get('wishlist_only', '') # Parameter baru
 
     query = Buku.query
 
+    # 1. Filter Pencarian Teks
     if search:
         query = query.filter(
             db.or_(
@@ -74,19 +79,30 @@ def katalog():
             )
         )
 
+    # 2. Filter Kategori
     if kategori_id:
         query = query.filter(Buku.id_kategori == kategori_id)
 
-    # Filter ketersediaan
+    # 3. Filter Ketersediaan
     if ketersediaan == 'tersedia':
         query = query.filter(Buku.stok_tersedia > 0)
     elif ketersediaan == 'habis':
         query = query.filter(Buku.stok_tersedia == 0)
 
+    # 4. FILTER WISHLIST (BARU)
+    if wishlist_only == 'true':
+        # Ambil semua ID buku yang ada di wishlist user ini
+        my_wishlist_ids = db.session.query(Wishlist.id_buku).filter(
+            Wishlist.id_anggota == current_user.id
+        ).subquery()
+        
+        # Filter query utama hanya untuk buku yang ID-nya ada di subquery tersebut
+        query = query.filter(Buku.id.in_(my_wishlist_ids))
+
     buku_list = query.order_by(Buku.judul).all()
     kategori_list = KategoriBuku.query.order_by(KategoriBuku.nama_kategori).all()
 
-    # Dapatkan daftar ID buku yang sudah di wishlist user
+    # Dapatkan daftar ID buku yang sudah di wishlist user (untuk tampilan tombol love)
     wishlist_buku_ids = set()
     if current_user.is_authenticated:
         wishlist_items = current_user.wishlist_items.all()
@@ -98,7 +114,10 @@ def katalog():
                          search=search,
                          selected_kategori=kategori_id,
                          selected_ketersediaan=ketersediaan,
+                         selected_wishlist=wishlist_only, # Kirim status filter ke template
                          wishlist_buku_ids=wishlist_buku_ids)
+
+
 
 
 @anggota_bp.route('/detail_buku/<int:id>')
@@ -117,7 +136,7 @@ def detail_buku(id):
         Peminjaman.status_transaksi.in_(['dipinjam', 'terlambat'])
     ).first() is not None
 
-    # Cek apakah ada reservasi menunggu untuk buku ini
+    # Cek apakah ada reservasi menunggu untuk buku ini (umum)
     ada_reservasi_menunggu = buku.has_pending_reservation()
 
     # Cek apakah buku sudah ada di wishlist user
@@ -125,13 +144,21 @@ def detail_buku(id):
         Wishlist.id_anggota == current_user.id,
         Wishlist.id_buku == id
     ).first() is not None
+    
+    # BARU: Cek apakah USER INI sedang memiliki reservasi aktif untuk buku ini
+    reservasi_saya = Reservasi.query.filter(
+        Reservasi.id_pemesan == current_user.id,
+        Reservasi.id_buku == id,
+        Reservasi.status_antrian.in_(['menunggu', 'siap_diambil'])
+    ).first()
 
     return render_template('anggota/detail_buku.html',
                          buku=buku,
                          sedang_meminjam=sedang_meminjam,
                          ada_reservasi_menunggu=ada_reservasi_menunggu,
-                         sudah_di_wishlist=sudah_di_wishlist)
-
+                         sudah_di_wishlist=sudah_di_wishlist,
+                         reservasi_saya=reservasi_saya) # Kirim variabel baru
+    
 
 @anggota_bp.route('/peminjaman-saya', methods=['GET', 'POST'])
 @login_required
@@ -203,138 +230,114 @@ def peminjaman_saya():
     return render_template('anggota/peminjaman_saya.html',
                          peminjaman_list=peminjaman_list)
 
-
 @anggota_bp.route('/reservasi-saya', methods=['GET', 'POST'])
 @login_required
 def reservasi_saya():
     """
     Daftar Reservasi Saya
-    Status antrian: menunggu/siap_diambil/diambil/kadaluarsa/batal
-    Mendukung parameter GET: id_buku dan action=reservasi_from_katalog untuk reservasi langsung dari katalog
     """
-    # Handle reservasi via GET parameter dari katalog
+    # --- HANDLE POST REQUEST ---
+    if request.method == 'POST':
+        action = request.form.get('action')
+        next_page = request.form.get('next_page', request.referrer or url_for('anggota.reservasi_saya'))
+
+        if action == 'batal':
+            id_reservasi = request.form.get('id_reservasi')
+            reservasi = Reservasi.query.get(id_reservasi)
+            if reservasi and reservasi.id_pemesan == current_user.id and reservasi.status_antrian in ['menunggu', 'siap_diambil']:
+                reservasi.status_antrian = 'batal'
+                db.session.commit()
+                flash('Reservasi berhasil dibatalkan.', 'info')
+            return redirect(next_page)
+
+        elif action == 'hapus_riwayat':
+            id_reservasi = request.form.get('id_reservasi')
+            reservasi = Reservasi.query.get(id_reservasi)
+            if reservasi and reservasi.id_pemesan == current_user.id and reservasi.status_antrian in ['diambil', 'kadaluarsa', 'batal']:
+                db.session.delete(reservasi)
+                db.session.commit()
+                flash('Item riwayat berhasil dihapus.', 'success')
+            else:
+                flash('Gagal menghapus item riwayat.', 'error')
+            return redirect(next_page)
+
+        elif action == 'hapus_semua_riwayat':
+            Reservasi.query.filter(
+                Reservasi.id_pemesan == current_user.id,
+                Reservasi.status_antrian.in_(['diambil', 'kadaluarsa', 'batal'])
+            ).delete(synchronize_session=False)
+            db.session.commit()
+            flash('Semua riwayat reservasi berhasil dihapus.', 'success')
+            return redirect(next_page)
+
+    # --- HANDLE GET REQUEST ---
     if request.method == 'GET':
         id_buku = request.args.get('id_buku', type=int)
         action = request.args.get('action')
         
+        # Logika reservasi cepat dari katalog
         if action == 'reservasi_from_katalog' and id_buku:
             buku = Buku.query.get(id_buku)
-            
             if not buku:
                 flash('Buku tidak ditemukan.', 'error')
                 return redirect(url_for('anggota.katalog'))
             
-            # Cek apakah buku tersedia (jika tersedia, sebaiknya pinjam langsung)
             if buku.stok_tersedia > 0:
-                flash('Buku ini tersedia. Silakan pinjam langsung di perpustakaan.', 'info')
+                flash('Buku ini tersedia. Silakan pinjam langsung.', 'info')
                 return redirect(url_for('anggota.detail_buku', id=id_buku))
             
-            # Cek apakah user sudah punya reservasi aktif untuk buku ini
-            existing = Reservasi.query.filter(
-                Reservasi.id_pemesan == current_user.id,
-                Reservasi.id_buku == id_buku,
+            existing = Reservasi.query.filter_by(id_pemesan=current_user.id, id_buku=id_buku).filter(
                 Reservasi.status_antrian.in_(['menunggu', 'siap_diambil'])
             ).first()
             
             if existing:
                 flash('Anda sudah memiliki reservasi aktif untuk buku ini.', 'warning')
-                return redirect(url_for('anggota.reservasi_saya'))
+            else:
+                reservasi_baru = Reservasi(id_pemesan=current_user.id, id_buku=id_buku, status_antrian='menunggu')
+                db.session.add(reservasi_baru)
+                db.session.commit()
+                flash('Reservasi berhasil dibuat!', 'success')
             
-            # Buat reservasi baru
-            reservasi_baru = Reservasi(
-                id_pemesan=current_user.id,
-                id_buku=id_buku,
-                status_antrian='menunggu'
-            )
+            return redirect(url_for('anggota.katalog'))
+
+        # Tampilkan List
+        filter_status = request.args.get('status', 'aktif')
+        search_query = request.args.get('search', '') # Ambil parameter search
+        
+        query = current_user.reservasi
+
+        if filter_status == 'aktif':
+            query = query.filter(Reservasi.status_antrian.in_(['menunggu', 'siap_diambil']))
+            # Search juga bisa diterapkan di aktif jika diinginkan
+            if search_query:
+                 query = query.join(Buku).filter(
+                    db.or_(
+                        Buku.judul.ilike(f'%{search_query}%'),
+                        Buku.penulis.ilike(f'%{search_query}%')
+                    )
+                )
+            query = query.order_by(Reservasi.tgl_pemesanan.desc())
             
-            db.session.add(reservasi_baru)
-            db.session.commit()
-            
-            flash(f'Reservasi berhasil! Anda akan mendapat notifikasi ketika buku "{buku.judul}" tersedia.', 'success')
-            return redirect(url_for('anggota.reservasi_saya'))
-    
-    if request.method == 'POST':
-        action = request.form.get('action')
+        elif filter_status == 'riwayat':
+            query = query.filter(Reservasi.status_antrian.in_(['diambil', 'kadaluarsa', 'batal']))
+            # Terapkan filter pencarian pada riwayat
+            if search_query:
+                query = query.join(Buku).filter(
+                    db.or_(
+                        Buku.judul.ilike(f'%{search_query}%'),
+                        Buku.penulis.ilike(f'%{search_query}%')
+                    )
+                )
+            query = query.order_by(Reservasi.tgl_pemesanan.desc())
+        else:
+            query = query.filter(False) # Kosongkan jika status tidak valid
 
-        if action == 'reservasi':
-            # Buat reservasi baru
-            id_buku = request.form.get('id_buku')
-            buku = Buku.query.get(id_buku)
+        reservasi_list = query.all()
 
-            if not buku:
-                flash('Buku tidak ditemukan.', 'error')
-                return redirect(url_for('anggota.reservasi_saya'))
-
-            # Cek apakah buku tersedia (jika tersedia, sebaiknya pinjam langsung)
-            if buku.stok_tersedia > 0:
-                flash('Buku ini tersedia. Silakan pinjam langsung di perpustakaan.', 'info')
-                return redirect(url_for('anggota.katalog'))
-
-            # Cek apakah user sudah punya reservasi aktif untuk buku ini
-            existing = Reservasi.query.filter(
-                Reservasi.id_pemesan == current_user.id,
-                Reservasi.id_buku == id_buku,
-                Reservasi.status_antrian.in_(['menunggu', 'siap_diambil'])
-            ).first()
-
-            if existing:
-                flash('Anda sudah memiliki reservasi aktif untuk buku ini.', 'warning')
-                return redirect(url_for('anggota.reservasi_saya'))
-
-            # Buat reservasi baru
-            reservasi_baru = Reservasi(
-                id_pemesan=current_user.id,
-                id_buku=id_buku,
-                status_antrian='menunggu'
-            )
-
-            db.session.add(reservasi_baru)
-            db.session.commit()
-
-            flash(f'Reservasi berhasil! Anda akan mendapat notifikasi ketika buku "{buku.judul}" tersedia.', 'success')
-            return redirect(url_for('anggota.reservasi_saya'))
-
-        elif action == 'batal':
-            # Batalkan reservasi
-            id_reservasi = request.form.get('id_reservasi')
-            reservasi = Reservasi.query.get(id_reservasi)
-
-            if not reservasi:
-                flash('Reservasi tidak ditemukan.', 'error')
-                return redirect(url_for('anggota.reservasi_saya'))
-
-            if reservasi.id_pemesan != current_user.id:
-                flash('Anda tidak dapat membatalkan reservasi orang lain.', 'error')
-                return redirect(url_for('anggota.reservasi_saya'))
-
-            if reservasi.status_antrian not in ['menunggu', 'siap_diambil']:
-                flash('Reservasi ini tidak dapat dibatalkan.', 'warning')
-                return redirect(url_for('anggota.reservasi_saya'))
-
-            reservasi.status_antrian = 'batal'
-            db.session.commit()
-
-            flash('Reservasi berhasil dibatalkan.', 'info')
-            return redirect(url_for('anggota.reservasi_saya'))
-
-    # GET - tampilkan semua reservasi
-    filter_status = request.args.get('status', 'aktif')
-
-    if filter_status == 'aktif':
-        reservasi_list = current_user.reservasi.filter(
-            Reservasi.status_antrian.in_(['menunggu', 'siap_diambil'])
-        ).order_by(Reservasi.tgl_pemesanan.desc()).all()
-    elif filter_status == 'riwayat':
-        reservasi_list = current_user.reservasi.filter(
-            Reservasi.status_antrian.in_(['diambil', 'kadaluarsa', 'batal'])
-        ).order_by(Reservasi.tgl_pemesanan.desc()).all()
-    else:
-        reservasi_list = current_user.reservasi.order_by(
-            Reservasi.tgl_pemesanan.desc()
-        ).all()
-
-    return render_template('anggota/reservasi_saya.html',
-                         reservasi_list=reservasi_list)
+        return render_template('anggota/reservasi_saya.html', 
+                             reservasi_list=reservasi_list,
+                             current_status=filter_status,
+                             search_query=search_query) # Kirim query search ke template
 
 
 @anggota_bp.route('/wishlist', methods=['POST'])
@@ -349,60 +352,59 @@ def wishlist_action():
 @anggota_bp.route('/toggle-wishlist/<int:id_buku>', methods=['POST'])
 @login_required
 def toggle_wishlist(id_buku):
-    """
-    Toggle wishlist: tambah jika belum ada, hapus jika sudah ada
-    Mencegah duplikasi dengan validasi ketat
-    """
     buku = Buku.query.get_or_404(id_buku)
-
-    # Cek apakah sudah ada di wishlist
     existing = Wishlist.query.filter(
         Wishlist.id_anggota == current_user.id,
         Wishlist.id_buku == id_buku
     ).first()
 
     if existing:
-        # Hapus dari wishlist
         db.session.delete(existing)
         db.session.commit()
         flash(f'Buku "{buku.judul}" dihapus dari wishlist.', 'info')
     else:
-        # Validasi ganda untuk mencegah duplikasi (race condition)
+        # Cek race condition
         existing_check = Wishlist.query.filter_by(
             id_anggota=current_user.id,
             id_buku=id_buku
         ).first()
         
         if not existing_check:
-            # Tambahkan ke wishlist
-            wishlist_baru = Wishlist(
-                id_anggota=current_user.id,
-                id_buku=id_buku
-            )
+            wishlist_baru = Wishlist(id_anggota=current_user.id, id_buku=id_buku)
             db.session.add(wishlist_baru)
             db.session.commit()
             flash(f'Buku "{buku.judul}" berhasil ditambahkan ke wishlist!', 'success')
         else:
             flash(f'Buku "{buku.judul}" sudah ada di wishlist.', 'info')
 
-    # Redirect kembali ke halaman sebelumnya
+    # Prioritaskan next_page dari form, jika tidak ada gunakan referrer, terakhir fallback ke katalog
     next_page = request.form.get('next_page', request.referrer or url_for('anggota.katalog'))
     return redirect(next_page)
-
 
 @anggota_bp.route('/wishlist-saya')
 @login_required
 def wishlist_saya():
     """
-    Daftar Wishlist Saya
-    Menampilkan semua buku yang ada di wishlist
+    Daftar Wishlist Saya dengan fitur pencarian
     """
-    wishlist_items = current_user.wishlist_items.order_by(
-        Wishlist.tanggal_ditambahkan.desc()
-    ).all()
+    search = request.args.get('search', '')
+    
+    # Query Wishlist join dengan Buku
+    query = Wishlist.query.filter_by(id_anggota=current_user.id).join(Buku)
+    
+    if search:
+        query = query.filter(
+            db.or_(
+                Buku.judul.ilike(f'%{search}%'),
+                Buku.penulis.ilike(f'%{search}%')
+            )
+        )
+    
+    wishlist_items = query.order_by(Wishlist.tanggal_ditambahkan.desc()).all()
 
     return render_template('anggota/wishlist_saya.html',
-                         wishlist_items=wishlist_items)
+                         wishlist_items=wishlist_items,
+                         search=search)
 
 
 @anggota_bp.route('/profil', methods=['GET', 'POST'])
