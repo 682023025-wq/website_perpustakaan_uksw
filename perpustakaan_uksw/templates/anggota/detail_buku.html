@@ -72,7 +72,7 @@
                 <!-- Action Buttons -->
                 <div class="flex gap-3">
                     {% if buku.stok_tersedia > 0 %}
-                    <button class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                    <button disabled class="flex-1 bg-green-600 text-white font-semibold py-3 px-4 rounded-lg cursor-not-allowed opacity-75" title="Fitur peminjaman akan segera hadir">
                         <i class="fas fa-hand-holding mr-2"></i>Pinjam Buku Ini
                     </button>
                     {% else %}
