@@ -70,7 +70,7 @@
                         <div class="flex-shrink-0">
                             {% if user.is_authenticated %}
                                 <form method="POST" action="{{ url_for('anggota.toggle_wishlist', id=buku.id) }}">
-                                    {% csrf_token %}
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button type="submit" class="focus:outline-none hover:scale-110 transition-transform" 
                                             title="{% if item.is_in_wishlist %}Hapus dari Wishlist{% else %}Tambah ke Wishlist{% endif %}">
                                         {% if item.is_in_wishlist %}
