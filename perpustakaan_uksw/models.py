@@ -207,6 +207,27 @@ class Peminjaman(db.Model):
         return True
 
 
+class Wishlist(db.Model):
+    """
+    Model untuk tabel wishlist
+    Menyimpan daftar buku yang diinginkan oleh pengguna
+    """
+    __tablename__ = 'wishlist'
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id_pengguna = db.Column(db.Integer, db.ForeignKey('pengguna.id', ondelete='CASCADE'), nullable=False)
+    id_buku = db.Column(db.Integer, db.ForeignKey('buku.id', ondelete='CASCADE'), nullable=False)
+    tanggal_ditambahkan = db.Column(db.DateTime, default=datetime.utcnow)
+    sudah_dinotifikasi = db.Column(db.Boolean, default=False)
+    
+    # Relasi
+    pengguna = db.relationship('Pengguna', backref=db.backref('wishlist', lazy='dynamic'))
+    buku = db.relationship('Buku', backref=db.backref('wishlist_items', lazy='dynamic'))
+    
+    def __repr__(self):
+        return f'<Wishlist pengguna={self.id_pengguna} buku={self.id_buku}>'
+
+
 class Reservasi(db.Model):
     """
     Model untuk tabel reservasi

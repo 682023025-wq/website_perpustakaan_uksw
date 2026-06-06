@@ -1,7 +1,29 @@
-(perpustakaan_uksw/templates/base_auth.html
-perpustakaan_uksw/templates/anggota/dashboard.html
-perpustakaan_uksw/templates/anggota/detail_buku.html
-perpustakaan_uksw/templates/anggota/katalog.html
-perpustakaan_uksw/templates/anggota/reservasi_saya.html
-perpustakaan_uksw/templates/auth/login.html
-perpustakaan_uksw/templates/base.html)
+```
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Dependencies
+.venv/
+venv/
+node_modules/
+
+# Editors
+.vscode/
+.idea/
+
+# Build artifacts
+dist/
+build/
+target/
+```

@@ -16,8 +16,8 @@
                 Anda juga dapat <strong>filter berdasarkan kategori</strong> untuk mempersempit hasil pencarian.
             </p>
             <ul class="mt-3 space-y-1 text-sm text-gray-600">
-                <li><i class="fas fa-check text-green-500 mr-2"></i>Klik tombol <strong>"Pinjam"</strong> jika stok tersedia (tombol hijau)</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i>Klik tombol <strong>"Wishlist"</strong> jika stok habis (tombol ungu)</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i>Klik tombol <strong>"Wishlist"</strong> untuk menambahkan buku ke daftar keinginan Anda</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i>Jika buku tersedia, Anda akan mendapat notifikasi "Buku sudah tersedia"</li>
                 <li><i class="fas fa-check text-green-500 mr-2"></i>Klik judul buku untuk melihat detail lengkap dan lokasi rak</li>
             </ul>
         </div>
@@ -143,19 +143,20 @@
                 
                 <!-- Action Buttons -->
                 <div class="flex gap-2">
-                    {% if buku.stok_tersedia > 0 %}
-                    <a href="{{ url_for('anggota.detail_buku', id=buku.id) }}" 
-                       class="flex-1 bg-green-600 text-white text-sm font-medium py-2 px-3 rounded-lg cursor-not-allowed opacity-75 text-center" 
-                       title="Fitur peminjaman akan segera hadir">
-                        <i class="fas fa-hand-holding mr-1"></i>Pinjam
-                    </a>
-                    {% else %}
-                    <a href="{{ url_for('anggota.detail_buku', id=buku.id) }}" 
-                       class="flex-1 bg-purple-600 text-white text-sm font-medium py-2 px-3 rounded-lg cursor-not-allowed opacity-75 text-center"
-                       title="Fitur wishlist akan segera hadir">
-                        <i class="fas fa-heart mr-1"></i>Wishlist
-                    </a>
-                    {% endif %}
+                    <form method="POST" action="{{ url_for('anggota.wishlist_saya') }}" class="flex-1">
+                        {% if buku.stok_tersedia > 0 %}
+                        <input type="hidden" name="action" value="hapus_dari_wishlist">
+                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors" title="Hapus dari Wishlist">
+                            <i class="fas fa-heart-broken mr-1"></i>Hapus Wishlist
+                        </button>
+                        {% else %}
+                        <input type="hidden" name="action" value="tambah_wishlist">
+                        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors" title="Tambah ke Wishlist">
+                            <i class="fas fa-heart mr-1"></i>Wishlist
+                        </button>
+                        {% endif %}
+                        <input type="hidden" name="id_buku" value="{{ buku.id }}">
+                    </form>
                     
                     <a href="{{ url_for('anggota.detail_buku', id=buku.id) }}" 
                        class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"

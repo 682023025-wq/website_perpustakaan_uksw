@@ -4,7 +4,7 @@ Fitur: Katalog, peminjaman saya, reservasi, profil
 """
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from models import db, Pengguna, Buku, Peminjaman, Reservasi, KategoriBuku
+from models import db, Pengguna, Buku, Peminjaman, Reservasi, KategoriBuku, Wishlist
 from datetime import date, timedelta
 
 anggota_bp = Blueprint('anggota', __name__, template_folder='../templates/anggota')
@@ -113,6 +113,82 @@ def detail_buku(id):
                          buku=buku,
                          sedang_meminjam=sedang_meminjam,
                          ada_reservasi_menunggu=ada_reservasi_menunggu)
+
+
+@anggota_bp.route('/wishlist-saya', methods=['GET', 'POST'])
+@login_required
+def wishlist_saya():
+    """
+    Daftar Wishlist Saya
+    Mengelola daftar buku yang diinginkan pengguna
+    Notifikasi otomatis jika buku tersedia
+    """
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'tambah_wishlist':
+            # Tambah ke wishlist
+            id_buku = request.form.get('id_buku')
+            buku = Buku.query.get(id_buku)
+            
+            if not buku:
+                flash('Buku tidak ditemukan.', 'error')
+                return redirect(url_for('anggota.katalog'))
+            
+            # Cek apakah user sudah punya wishlist untuk buku ini
+            existing = Wishlist.query.filter(
+                Wishlist.id_pengguna == current_user.id,
+                Wishlist.id_buku == id_buku
+            ).first()
+            
+            if existing:
+                flash('Buku ini sudah ada di wishlist Anda.', 'warning')
+                return redirect(url_for('anggota.wishlist_saya'))
+            
+            # Buat wishlist baru
+            wishlist_baru = Wishlist(
+                id_pengguna=current_user.id,
+                id_buku=id_buku,
+                sudah_dinotifikasi=False
+            )
+            
+            db.session.add(wishlist_baru)
+            db.session.commit()
+            
+            flash(f'Buku "{buku.judul}" berhasil ditambahkan ke wishlist.', 'success')
+            return redirect(url_for('anggota.wishlist_saya'))
+        
+        elif action == 'hapus_dari_wishlist':
+            # Hapus dari wishlist
+            id_buku = request.form.get('id_buku')
+            wishlist = Wishlist.query.filter(
+                Wishlist.id_pengguna == current_user.id,
+                Wishlist.id_buku == id_buku
+            ).first()
+            
+            if not wishlist:
+                flash('Buku tidak ditemukan di wishlist.', 'warning')
+                return redirect(url_for('anggota.wishlist_saya'))
+            
+            db.session.delete(wishlist)
+            db.session.commit()
+            
+            flash('Buku berhasil dihapus dari wishlist.', 'info')
+            return redirect(url_for('anggota.wishlist_saya'))
+    
+    # GET - tampilkan semua wishlist
+    wishlist_list = current_user.wishlist.order_by(Wishlist.tanggal_ditambahkan.desc()).all()
+    
+    # Cek notifikasi ketersediaan buku
+    for item in wishlist_list:
+        if item.buku.stok_tersedia > 0 and not item.sudah_dinotifikasi:
+            flash(f'📚 Buku "{item.buku.judul}" sekarang tersedia!', 'success')
+            item.sudah_dinotifikasi = True
+    
+    db.session.commit()
+    
+    return render_template('anggota/wishlist_saya.html',
+                         wishlist_list=wishlist_list)
 
 
 @anggota_bp.route('/peminjaman-saya', methods=['GET', 'POST'])

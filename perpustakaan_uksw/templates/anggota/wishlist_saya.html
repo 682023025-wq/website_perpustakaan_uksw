@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Wishlist Saya - Perpustakaan UKSW{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">📚 Wishlist Saya</h1>
+    
+    <!-- Helper Text -->
+    <div class="mb-6 bg-white rounded-lg shadow-md border-l-4 border-purple-500 p-5">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-heart text-purple-500 text-2xl"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Daftar Buku Keinginan Anda</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    Buku-buku di wishlist akan otomatis memberi notifikasi ketika stok tersedia.
+                    Anda akan melihat pesan "Buku sudah tersedia" saat buku yang Anda inginkan kembali ke perpustakaan.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    {% if wishlist_list and wishlist_list|length > 0 %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for item in wishlist_list %}
+        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300">
+            <!-- Book Cover -->
+            <div class="relative h-48 bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center overflow-hidden">
+                {% if item.buku.url_cover %}
+                <img src="{{ item.buku.url_cover }}" 
+                     alt="Cover {{ item.buku.judul }}" 
+                     class="w-full h-full object-cover"
+                     onerror="this.parentElement.innerHTML='<i class=\'fas fa-book text-6xl text-purple-300\'></i>'">
+                {% else %}
+                <i class="fas fa-book text-6xl text-purple-300"></i>
+                {% endif %}
+                
+                <!-- Availability Badge -->
+                <div class="absolute top-2 right-2">
+                    {% if item.buku.stok_tersedia > 0 %}
+                    <span class="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded-full animate-pulse">
+                        <i class="fas fa-check-circle mr-1"></i>Tersedia!
+                    </span>
+                    {% else %}
+                    <span class="px-2 py-1 bg-gray-500 text-white text-xs font-bold rounded-full">
+                        <i class="fas fa-clock mr-1"></i>Menunggu
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Book Info -->
+            <div class="p-4">
+                <h3 class="font-bold text-gray-800 mb-1 line-clamp-2 min-h-[2.5rem]">
+                    <a href="{{ url_for('anggota.detail_buku', id=item.buku.id) }}" 
+                       class="hover:text-purple-600 transition-colors">
+                        {{ item.buku.judul }}
+                    </a>
+                </h3>
+                
+                <p class="text-sm text-gray-600 mb-2">{{ item.buku.penulis }}</p>
+                
+                {% if item.buku.kategori %}
+                <span class="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full mb-3 w-fit">
+                    {{ item.buku.kategori.nama_kategori }}
+                </span>
+                {% endif %}
+                
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs text-gray-500">
+                        <i class="fas fa-box mr-1"></i>Stok: 
+                        <span class="font-semibold {% if item.buku.stok_tersedia > 0 %}text-green-600{% else %}text-gray-600{% endif %}">
+                            {{ item.buku.stok_tersedia }}
+                        </span>
+                    </span>
+                    <span class="text-xs text-gray-500">
+                        <i class="fas fa-calendar mr-1"></i>{{ item.tanggal_ditambahkan.strftime('%d/%m/%Y') }}
+                    </span>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex gap-2">
+                    <a href="{{ url_for('anggota.detail_buku', id=item.buku.id) }}" 
+                       class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors text-center">
+                        <i class="fas fa-eye mr-1"></i>Lihat Detail
+                    </a>
+                    
+                    <form method="POST" action="{{ url_for('anggota.wishlist_saya') }}" class="flex-shrink-0">
+                        <input type="hidden" name="action" value="hapus_dari_wishlist">
+                        <input type="hidden" name="id_buku" value="{{ item.buku.id }}">
+                        <button type="submit" 
+                                class="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-colors"
+                                title="Hapus dari Wishlist">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="mt-6 text-center text-sm text-gray-600">
+        <p>Anda memiliki <strong>{{ wishlist_list|length }}</strong> buku di wishlist</p>
+    </div>
+    
+    {% else %}
+    <!-- Empty State -->
+    <div class="bg-white rounded-lg shadow-md p-12 text-center">
+        <i class="fas fa-heart-broken text-6xl text-gray-300 mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-600 mb-2">Wishlist Kosong</h3>
+        <p class="text-gray-500 mb-4">Belum ada buku yang Anda tambahkan ke wishlist.</p>
+        <a href="{{ url_for('anggota.katalog') }}" 
+           class="inline-block px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors">
+            <i class="fas fa-search mr-2"></i>Jelajahi Katalog
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

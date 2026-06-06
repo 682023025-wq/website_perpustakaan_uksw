@@ -72,13 +72,21 @@
                 <!-- Action Buttons -->
                 <div class="flex gap-3">
                     {% if buku.stok_tersedia > 0 %}
-                    <button disabled class="flex-1 bg-green-600 text-white font-semibold py-3 px-4 rounded-lg cursor-not-allowed opacity-75" title="Fitur peminjaman akan segera hadir">
-                        <i class="fas fa-hand-holding mr-2"></i>Pinjam Buku Ini
-                    </button>
+                    <form method="POST" action="{{ url_for('anggota.wishlist_saya') }}" class="flex-1">
+                        <input type="hidden" name="action" value="hapus_dari_wishlist">
+                        <input type="hidden" name="id_buku" value="{{ buku.id }}">
+                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-heart-broken mr-2"></i>Hapus dari Wishlist
+                        </button>
+                    </form>
                     {% else %}
-                    <button disabled class="flex-1 bg-purple-600 text-white font-semibold py-3 px-4 rounded-lg cursor-not-allowed opacity-75" title="Fitur wishlist akan segera hadir">
-                        <i class="fas fa-heart mr-2"></i>Wishlist Buku Ini
-                    </button>
+                    <form method="POST" action="{{ url_for('anggota.wishlist_saya') }}" class="flex-1">
+                        <input type="hidden" name="action" value="tambah_wishlist">
+                        <input type="hidden" name="id_buku" value="{{ buku.id }}">
+                        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-heart mr-2"></i>Wishlist Buku Ini
+                        </button>
+                    </form>
                     {% endif %}
                 </div>
             </div>
