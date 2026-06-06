@@ -11,14 +11,16 @@ class Pengguna(UserMixin, db.Model):
     __tablename__ = 'pengguna'
     
     id = db.Column(db.Integer, primary_key=True)
-    nim_nip = db.Column(db.String(20), unique=True, nullable=False, index=True)
-    nama = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)
-    peran = db.Column(db.String(20), nullable=False)  # 'mahasiswa', 'dosen', 'petugas', 'admin'
-    prodi = db.Column(db.String(100))  # Program studi (untuk mahasiswa/dosen)
-    is_aktif = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    nama_lengkap = db.Column(db.String(100), nullable=False)
+    nomor_induk = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    peran = db.Column(db.Enum('super_petugas', 'petugas', 'dosen', 'mahasiswa'), default='mahasiswa')
+    level_akses = db.Column(db.Enum('penuh', 'terbatas'), default='terbatas')
+    program_studi = db.Column(db.String(100))
+    fakultas = db.Column(db.String(100))
+    email = db.Column(db.String(100), unique=True)
+    kata_sandi_hash = db.Column(db.String(255), nullable=False)
+    status_aktif = db.Column(db.Boolean, default=True)
+    tanggal_dibuat = db.Column(db.DateTime, default=db.func.current_timestamp())
     
     # Relasi ke peminjaman
     peminjaman_aktif = db.relationship('Peminjaman', backref='peminjam', 
@@ -29,11 +31,16 @@ class Pengguna(UserMixin, db.Model):
     
     def set_password(self, password):
         """Hash password sebelum disimpan"""
-        self.password_hash = generate_password_hash(password)
+        self.kata_sandi_hash = generate_password_hash(password)
     
     def check_password(self, password):
         """Cek apakah password cocok dengan hash"""
-        return check_password_hash(self.password_hash, password)
+        return check_password_hash(self.kata_sandi_hash, password)
+    
+    @property
+    def is_active(self):
+        """Flask-Login butuh properti ini untuk cek apakah user aktif"""
+        return self.status_aktif
     
     def get_nama_peran(self):
         """Mengembalikan nama peran dalam bahasa Indonesia"""
@@ -41,12 +48,12 @@ class Pengguna(UserMixin, db.Model):
             'mahasiswa': 'Mahasiswa',
             'dosen': 'Dosen',
             'petugas': 'Petugas Perpustakaan',
-            'admin': 'Admin/Super Petugas'
+            'super_petugas': 'Admin/Super Petugas'
         }
         return role_map.get(self.peran, self.peran)
     
     def __repr__(self):
-        return f'<Pengguna {self.nama} ({self.nim_nip})>'
+        return f'<Pengguna {self.nama_lengkap} ({self.nomor_induk})>'
 
 
 class Buku(db.Model):
