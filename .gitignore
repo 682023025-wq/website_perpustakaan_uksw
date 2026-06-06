@@ -1,21 +1,22 @@
+```
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.py~
-*.py.class
-*.py.backup
-*.swp
-*.swo
 .Python
 env/
 venv/
 .venv/
 .ENV
+.ENV.local
+.env
+.env.local
+.env.*
+.env~*
 .venv.bak/
 pip-log.txt
-pip-selfcheck.json
+pip-delete-this-directory.txt
 .tox/
 .coverage
 .coverage.*
@@ -25,32 +26,38 @@ coverage.xml
 *.cover
 *.log
 *.tmp
-*~
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
 
-# Flask/Python web
-instance/
-.webassets-cache
+# Build and distribution artifacts
+dist/
+build/
+*.egg
+*.egg-info/
+*.so
+.libs/
+.deps/
 
-# Environment variables
-.env
-.env.local
-.env.*
+# Testing
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+
+# Web files
+staticfiles/
+media/
+*.min.js
+*.min.css
 
 # IDE
 .vscode/
 .idea/
-*.sublime-project
-*.sublime-workspace
-.project
-.pydevproject
-.settings/
+*.swp
+*.swo
 
-# OS generated files
+# OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 ```

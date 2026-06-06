@@ -274,8 +274,10 @@ def reservasi_saya():
 def profil():
     """
     Profil Pengguna
-    Lihat data diri, ganti password sendiri
+    Lihat data diri, ganti password sendiri, upload foto profil
     """
+    from backend.upload_utils import save_uploaded_file, delete_file
+    
     if request.method == 'POST':
         action = request.form.get('action')
         
@@ -285,6 +287,24 @@ def profil():
             user.program_studi = request.form.get('program_studi', '').strip()
             user.fakultas = request.form.get('fakultas', '').strip()
             user.email = request.form.get('email', '').strip() or None
+            
+            # Handle foto profil dari URL atau upload
+            foto_url = request.form.get('foto_url', '').strip()
+            foto_upload = request.files.get('foto_upload')
+            
+            # Jika ada URL foto, gunakan URL tersebut
+            if foto_url:
+                user.foto_profil = foto_url
+            # Jika ada file upload, simpan dan compress
+            elif foto_upload and foto_upload.filename:
+                # Hapus foto lama jika ada
+                if user.foto_profil:
+                    delete_file(user.foto_profil)
+                
+                # Simpan foto baru
+                foto_path = save_uploaded_file(foto_upload, 'profiles', compress=True, max_size=(400, 400))
+                if foto_path:
+                    user.foto_profil = foto_path
             
             db.session.commit()
             flash('Profil berhasil diperbarui.', 'success')

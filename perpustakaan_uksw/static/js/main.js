@@ -53,15 +53,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // User Menu Dropdown untuk Mobile
-    const userMenuBtn = document.getElementById('user-menu-btn');
-    if (userMenuBtn) {
-        userMenuBtn.addEventListener('click', function() {
-            // Bisa ditambahkan dropdown menu user di sini
-            window.location.href = '/auth/logout';
-        });
-    }
-    
     // Auto-hide flash messages setelah 5 detik
     const flashMessages = document.querySelectorAll('[role="alert"]');
     flashMessages.forEach(function(message) {
