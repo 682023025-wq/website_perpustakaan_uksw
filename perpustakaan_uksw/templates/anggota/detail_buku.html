@@ -112,21 +112,20 @@
                     </p>
                 </div>
                 
-                <!-- Action Buttons - Hanya tombol utama (Reservasi/Cek Rak) -->
-                <div class="mt-6">
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-3 mt-6">
+                    <!-- Tombol Utama (Primary Action) - Flex-1 -->
                     {% if buku.stok_tersedia > 0 %}
-                    <!-- Stok Tersedia: Cek Ketersediaan di Rak -->
-                    <button type="button" 
-                            onclick="alert('📚 Buku tersedia di Rak {{ buku.lokasi_rak or \\'tidak ditentukan\\' }}. Silakan ambil dan bawa ke meja petugas untuk proses peminjaman.')"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors">
-                        <i class="fas fa-search-location mr-2"></i>Cek Ketersediaan di Rak
+                    <button class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-heart mr-2"></i>Wishlist Buku Ini
                     </button>
                     {% else %}
-                    <!-- Stok Habis: Reservasi -->
-                    <form method="POST" action="{{ url_for('anggota.reservasi_buku') }}" class="w-full">
+                    <form method="POST" action="{{ url_for('anggota.wishlist_action') }}" class="flex-1">
                         <input type="hidden" name="id_buku" value="{{ buku.id }}">
-                        <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors">
-                            <i class="fas fa-clock mr-2"></i>Reservasi (Stok Habis)
+                        <input type="hidden" name="action" value="tambah">
+                        <input type="hidden" name="next_page" value="anggota.detail_buku">
+                        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-heart mr-2"></i>Wishlist Buku Ini
                         </button>
                     </form>
                     {% endif %}

@@ -142,27 +142,20 @@
                 
                 <!-- Action Buttons -->
                 <div class="flex gap-2">
-                    {% if buku.id in wishlist_buku_ids %}
-                    <!-- Buku sudah di wishlist - tampilkan tombol hapus -->
-                    <form method="POST" action="{{ url_for('anggota.wishlist_action') }}" class="flex-1">
-                        <input type="hidden" name="id_buku" value="{{ buku.id }}">
-                        <input type="hidden" name="action" value="hapus">
-                        <input type="hidden" name="next_page" value="anggota.katalog">
-                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors text-center">
-                            <i class="fas fa-trash mr-1"></i>Hapus
-                        </button>
-                    </form>
-                    {% else %}
-                    <!-- Buku belum di wishlist - tampilkan tombol tambah -->
                     <form method="POST" action="{{ url_for('anggota.wishlist_action') }}" class="flex-1">
                         <input type="hidden" name="id_buku" value="{{ buku.id }}">
                         <input type="hidden" name="action" value="tambah">
                         <input type="hidden" name="next_page" value="anggota.katalog">
+                        {% if buku.stok_tersedia > 0 %}
+                        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors text-center">
+                            <i class="fas fa-heart mr-1"></i>Wishlist
+                        </button>
+                        {% else %}
                         <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors text-center">
                             <i class="fas fa-heart mr-1"></i>Wishlist
                         </button>
+                        {% endif %}
                     </form>
-                    {% endif %}
                     
                     <a href="{{ url_for('anggota.detail_buku', id=buku.id) }}" 
                        class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
