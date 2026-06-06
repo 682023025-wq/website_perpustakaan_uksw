@@ -1,11 +1,202 @@
-(perlukan mengabaikan file yang dimodifikasi hanya jika termasuk dalam kategori yang harus diabaikan, seperti berkas biner atau artefak build. Dalam kasus ini, `perpustakaan_uksw/models.py` adalah file sumber Python biasa, jadi tidak perlu ditambahkan ke .gitignore. Karena tidak ada file lain dalam daftar perubahan yang memerlukan pengabaian, maka .gitignore tetap kosong.)
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-(perlu dicatat bahwa contoh 1 dalam instruksi menunjukkan bahwa jika hanya ada file sumber/konfigurasi yang berubah, maka outputnya kosong. Ini adalah skenario serupa.)
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+.env/
 
-(perlu mengikuti aturan 6: "If the change list contains ONLY source or config files... output an EMPTY .gitignore")
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
-Karena satu-satunya file yang dimodifikasi adalah `perpustakaan_uksw/models.py`, yang merupakan file sumber Python (kemungkinan besar berekstensi `.py` meskipun ekstensinya tidak disebutkan secara eksplisit, tetapi logika berlaku untuk file model Django/Python), dan tidak ada artefak build, dependensi, atau file sementara lainnya dalam daftar perubahan, maka tidak ada aturan .gitignore yang perlu ditambahkan atau diubah.
+# Logs
+*.log
 
-```
+# Coverage
+.coverage
+coverage/
+htmlcov/
 
-```
+# Environment
+.env
+.env.local
+*.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+*~
+.DS_Store
+
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst

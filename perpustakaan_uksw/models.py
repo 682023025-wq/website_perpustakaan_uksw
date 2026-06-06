@@ -55,31 +55,32 @@ class Pengguna(UserMixin, db.Model):
     def check_password(self, password):
         """
         Verifikasi password dengan hash yang tersimpan.
-        Menangani kasus jika hash kosong atau format tidak valid.
+        Menangani kasus jika hash kosong, tidak sesuai format, atau masih plain text.
         """
-        if not self.kata_sandi_hash:
+        if not self.kata_sandi_hash or self.kata_sandi_hash.strip() == '':
             return False
         
-        # Cek apakah string hash terlihat valid (mengandung '$' untuk format werkzeug)
+        # Cek apakah string hash terlihat valid (mengandung '$' untuk format werkzeug: method$salt$hash)
         if '$' not in self.kata_sandi_hash:
             # Kemungkinan password masih plain text di DB (data lama/testing)
-            # Bandingkan langsung sebagai fallback
-            import hmac
+            # Bandingkan langsung sebagai fallback (case-sensitive)
             try:
-                return hmac.compare_digest(
-                    self.kata_sandi_hash.encode('utf-8'), 
-                    password.encode('utf-8')
-                )
+                return self.kata_sandi_hash == password
             except Exception:
                 return False
         
         try:
             return check_password_hash(self.kata_sandi_hash, password)
-        except ValueError:
-            # Jika error format hash (misal: method tidak dikenali), anggap gagal
-            return False
-        except Exception:
+        except ValueError as e:
+            # Jika error format hash (misal: method tidak dikenali), coba bandingkan sebagai plain text
+            print(f"Warning: Hash format tidak valid untuk user {self.nomor_induk}. Error: {e}")
+            try:
+                return self.kata_sandi_hash == password
+            except Exception:
+                return False
+        except Exception as e:
             # Error lainnya, anggap gagal
+            print(f"Error saat check password: {e}")
             return False
     
     @property
