@@ -414,7 +414,10 @@ def profil():
     Profil Pengguna
     Lihat data diri, ganti password sendiri, upload foto profil
     """
-    from backend.upload_utils import save_uploaded_file, delete_file
+    from backend.upload_utils import save_uploaded_file, delete_file, init_cloudinary
+    
+    # Inisialisasi Cloudinary jika tersedia
+    init_cloudinary()
 
     if request.method == 'POST':
         action = request.form.get('action')
@@ -433,14 +436,14 @@ def profil():
             # Jika ada URL foto, gunakan URL tersebut
             if foto_url:
                 user.foto_profil = foto_url
-            # Jika ada file upload, simpan dan compress
+            # Jika ada file upload, simpan dan compress dengan Cloudinary
             elif foto_upload and foto_upload.filename:
                 # Hapus foto lama jika ada
                 if user.foto_profil:
                     delete_file(user.foto_profil)
 
-                # Simpan foto baru
-                foto_path = save_uploaded_file(foto_upload, 'profiles', compress=True, max_size=(400, 400))
+                # Simpan foto baru dengan Cloudinary (auto compress & resize)
+                foto_path = save_uploaded_file(foto_upload, 'profiles', compress=True, max_size=(400, 400), use_cloudinary=True)
                 if foto_path:
                     user.foto_profil = foto_path
 
