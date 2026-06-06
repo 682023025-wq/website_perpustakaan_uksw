@@ -72,7 +72,7 @@ class Buku(db.Model):
     penulis = db.Column(db.String(150), nullable=False)
     penerbit = db.Column(db.String(100))
     tahun_terbit = db.Column(db.Integer)
-    isbn = db.Column(db.String(13), unique=True)
+    isbn = db.Column(db.String(20), unique=True)  # Diperbesar untuk menampung ISBN-13 dengan format lengkap
     bahasa = db.Column(db.Enum('Indonesia', 'Inggris', 'Lainnya'), default='Indonesia')
     jumlah_halaman = db.Column(db.Integer)
     sinopsis = db.Column(db.Text)
