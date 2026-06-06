@@ -9,5 +9,20 @@ Press CTRL+C to quit
  * Restarting with stat
  * Debugger is active!
  * Debugger PIN: 527-399-635
+<<<<<<< HEAD
 127.0.0.1 - - [06/Jun/2026 11:19:55] "GET /auth/login HTTP/1.1" 200 -
 127.0.0.1 - - [06/Jun/2026 11:19:58] "GET /auth/login HTTP/1.1" 200 -
+=======
+127.0.0.1 - - [06/Jun/2026 10:48:00] "GET /auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [06/Jun/2026 10:48:03] "GET /anggota/katalog?ketersediaan=tersedia HTTP/1.1" 302 -
+127.0.0.1 - - [06/Jun/2026 10:48:06] "GET /anggota/katalog HTTP/1.1" 302 -
+127.0.0.1 - - [06/Jun/2026 10:48:08] "GET /anggota/katalog HTTP/1.1" 302 -
+127.0.0.1 - - [06/Jun/2026 10:48:11] "GET /anggota/katalog HTTP/1.1" 302 -
+127.0.0.1 - - [06/Jun/2026 10:48:13] "GET /anggota/katalog HTTP/1.1" 302 -
+127.0.0.1 - - [06/Jun/2026 10:48:17] "POST /auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [06/Jun/2026 10:48:20] "GET /anggota/katalog HTTP/1.1" 302 -
+127.0.0.1 - - [06/Jun/2026 10:48:22] "GET /anggota/katalog HTTP/1.1" 302 -
+127.0.0.1 - - [06/Jun/2026 10:48:25] "GET /anggota/katalog HTTP/1.1" 302 -
+127.0.0.1 - - [06/Jun/2026 10:48:28] "GET /anggota/katalog HTTP/1.1" 302 -
+127.0.0.1 - - [06/Jun/2026 10:48:31] "GET /anggota/katalog HTTP/1.1" 302 -
+>>>>>>> main

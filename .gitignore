@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+<<<<<<< HEAD
 
 # Logs
 *.log
@@ -17,13 +18,71 @@ __pycache__/
 .venv/
 venv/
 node_modules/
+=======
+.Python
+env/
+venv/
+.venv/
+.ENV
+.ENV.local
+.env
+.env.local
+.env.*
+.env~*
+.venv.bak/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+*.tmp
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Build and distribution artifacts
+dist/
+build/
+*.egg
+*.egg-info/
+*.so
+.libs/
+.deps/
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+
+# Web files
+staticfiles/
+media/
+*.min.js
+*.min.css
+>>>>>>> main
 
 # Editors
 .vscode/
 .idea/
+<<<<<<< HEAD
 
 # Build artifacts
 dist/
 build/
 target/
 ```
+=======
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+```
+>>>>>>> main
