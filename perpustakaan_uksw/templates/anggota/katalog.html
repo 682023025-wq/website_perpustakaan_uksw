@@ -145,12 +145,14 @@
                 <div class="flex gap-2">
                     {% if buku.stok_tersedia > 0 %}
                     <a href="{{ url_for('anggota.detail_buku', id=buku.id) }}" 
-                       class="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors text-center">
+                       class="flex-1 bg-green-600 text-white text-sm font-medium py-2 px-3 rounded-lg cursor-not-allowed opacity-75 text-center" 
+                       title="Fitur peminjaman akan segera hadir">
                         <i class="fas fa-hand-holding mr-1"></i>Pinjam
                     </a>
                     {% else %}
                     <a href="{{ url_for('anggota.detail_buku', id=buku.id) }}" 
-                       class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors text-center">
+                       class="flex-1 bg-purple-600 text-white text-sm font-medium py-2 px-3 rounded-lg cursor-not-allowed opacity-75 text-center"
+                       title="Fitur wishlist akan segera hadir">
                         <i class="fas fa-heart mr-1"></i>Wishlist
                     </a>
                     {% endif %}

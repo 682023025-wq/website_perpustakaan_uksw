@@ -1,43 +1,7 @@
-```
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Environment
-.env
-.env.local
-*.env.*
-
-# Logs
-*.log
-
-# Dependencies
-venv/
-.venv/
-node_modules/
-
-# Build artifacts
-dist/
-build/
-target/
-
-# Cache
-.mypy_cache/
-.pytest_cache/
-.coverage
-coverage/
-htmlcov/
-
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-*.tmp
-
-# OS
-.DS_Store
-Thumbs.db
-```
+(perpustakaan_uksw/templates/base_auth.html
+perpustakaan_uksw/templates/anggota/dashboard.html
+perpustakaan_uksw/templates/anggota/detail_buku.html
+perpustakaan_uksw/templates/anggota/katalog.html
+perpustakaan_uksw/templates/anggota/reservasi_saya.html
+perpustakaan_uksw/templates/auth/login.html
+perpustakaan_uksw/templates/base.html)
