@@ -5,6 +5,7 @@ Fitur: Katalog, peminjaman saya, reservasi, profil
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from models import db, Pengguna, Buku, Peminjaman, Reservasi, KategoriBuku, Wishlist
+from sqlalchemy import or_
 from datetime import date, timedelta
 
 anggota_bp = Blueprint('anggota', __name__, template_folder='../templates/anggota')
@@ -85,8 +86,7 @@ def katalog():
         wishlist_ids = [item.id_buku for item in wishlist_items]
     
     # Ambil daftar kategori untuk dropdown filter
-    from perpustakaan_uksw.models import Kategori
-    daftar_kategori = Kategori.query.all()
+    daftar_kategori = KategoriBuku.query.all()
 
     return render_template(
         'anggota/katalog.html', 
