@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Petugas - Perpustakaan UKSW{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Dashboard Petugas</h1>
+    <p class="text-gray-500">Ringkasan tugas harian Anda</p>
+</div>
+
+<!-- Statistik Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 mb-1">Peminjaman Hari Ini</p>
+                <p class="text-2xl font-bold text-gray-800">{{ peminjaman_hari_ini }}</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 mb-1">Pengembalian Hari Ini</p>
+                <p class="text-2xl font-bold text-gray-800">{{ pengembalian_hari_ini }}</p>
+            </div>
+            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 mb-1">Jatuh Tempo Hari Ini</p>
+                <p class="text-2xl font-bold text-gray-800">{{ jatuh_tempo_hari_ini }}</p>
+            </div>
+            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 mb-1">Denda Belum Lunas</p>
+                <p class="text-2xl font-bold text-gray-800">{{ denda_belum_lunas }}</p>
+            </div>
+            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Aksi Cepat</h3>
+        <div class="space-y-3">
+            <a href="{{ url_for('staf.manajemen_peminjaman') }}" class="block p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition">
+                <span class="font-medium text-blue-800">→ Manajemen Peminjaman</span>
+            </a>
+            <a href="{{ url_for('staf.tagihan_denda') }}" class="block p-4 bg-red-50 hover:bg-red-100 rounded-lg transition">
+                <span class="font-medium text-red-800">→ Tagihan Denda</span>
+            </a>
+            <a href="{{ url_for('staf.koleksi_buku') }}" class="block p-4 bg-green-50 hover:bg-green-100 rounded-lg transition">
+                <span class="font-medium text-green-800">→ Koleksi Buku</span>
+            </a>
+        </div>
+    </div>
+    
+    <div class="bg-gradient-to-br from-primary-50 to-sage-50 border border-primary-200 rounded-xl p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">👋 Selamat Datang!</h3>
+        <p class="text-gray-600 text-sm mb-4">Semoga harimu menyenangkan. Jangan lupa untuk:</p>
+        <ul class="text-sm text-gray-600 space-y-2">
+            <li>• Cek peminjaman yang jatuh tempo hari ini</li>
+            <li>• Proses pengembalian buku dengan teliti</li>
+            <li>• Konfirmasi pembayaran denda yang masuk</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

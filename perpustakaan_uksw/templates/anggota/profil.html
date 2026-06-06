@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Profil Saya - Perpustakaan UKSW{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">Profil Saya</h1>
+    
+    <!-- Info Pribadi -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Informasi Pribadi</h2>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm text-gray-500 mb-1">Nama Lengkap</label>
+                <p class="text-gray-800 font-medium">{{ current_user.nama }}</p>
+            </div>
+            <div>
+                <label class="block text-sm text-gray-500 mb-1">NIM / NIP</label>
+                <p class="text-gray-800 font-medium">{{ current_user.nim_nip }}</p>
+            </div>
+            <div>
+                <label class="block text-sm text-gray-500 mb-1">Email</label>
+                <p class="text-gray-800 font-medium">{{ current_user.email }}</p>
+            </div>
+            <div>
+                <label class="block text-sm text-gray-500 mb-1">Peran</label>
+                <p class="text-gray-800 font-medium capitalize">{{ current_user.get_nama_peran() }}</p>
+            </div>
+            {% if current_user.prodi %}
+            <div>
+                <label class="block text-sm text-gray-500 mb-1">Program Studi</label>
+                <p class="text-gray-800 font-medium">{{ current_user.prodi }}</p>
+            </div>
+            {% endif %}
+            <div>
+                <label class="block text-sm text-gray-500 mb-1">Status Akun</label>
+                <p class="{% if current_user.is_aktif %}text-green-600{% else %}text-red-600{% endif %} font-medium">
+                    {% if current_user.is_aktif %}✓ Aktif{% else %}✗ Nonaktif{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ganti Password -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Ganti Password</h2>
+        <form method="POST" action="{{ url_for('anggota.ganti_password') }}" class="space-y-4">
+            <div>
+                <label for="password_lama" class="block text-sm font-medium text-gray-700 mb-2">Password Lama</label>
+                <input type="password" name="password_lama" required 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
+            </div>
+            <div>
+                <label for="password_baru" class="block text-sm font-medium text-gray-700 mb-2">Password Baru</label>
+                <input type="password" name="password_baru" required minlength="6"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
+            </div>
+            <div>
+                <label for="konfirmasi_password" class="block text-sm font-medium text-gray-700 mb-2">Konfirmasi Password Baru</label>
+                <input type="password" name="konfirmasi_password" required minlength="6"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
+            </div>
+            <button type="submit" class="w-full bg-primary-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-primary-700 transition">
+                Update Password
+            </button>
+        </form>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div class="mt-6 grid grid-cols-2 gap-4">
+        <a href="{{ url_for('anggota.peminjaman_saya') }}" class="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl p-4 transition">
+            <p class="text-blue-800 font-medium">→ Lihat Peminjaman</p>
+        </a>
+        <a href="{{ url_for('anggota.reservasi_saya') }}" class="bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl p-4 transition">
+            <p class="text-purple-800 font-medium">→ Lihat Reservasi</p>
+        </a>
+    </div>
+</div>
+{% endblock %}
