@@ -62,7 +62,7 @@ def create_app():
     def index():
         from flask_login import current_user
         if current_user.is_authenticated:
-            if current_user.peran == 'super_petugas':
+            if current_user.peran == 'admin':
                 return redirect(url_for('admin.dashboard'))
             elif current_user.peran == 'petugas':
                 return redirect(url_for('staf.dashboard'))

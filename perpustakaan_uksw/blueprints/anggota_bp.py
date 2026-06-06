@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from models import db, Pengguna, Buku, Peminjaman, Reservasi, KategoriBuku
-from datetime import datetime, timedelta, date
+from models import db, Pengguna, Buku, Peminjaman, Reservasi
+from datetime import datetime, timedelta
 from sqlalchemy import func
 
 anggota_bp = Blueprint('anggota', __name__)
@@ -19,24 +19,25 @@ def katalog():
     search_query = request.args.get('search', '')
     kategori_filter = request.args.get('kategori', '')
     
-    query = Buku.query
+    query = Buku.query.filter(Buku.stok_total > 0)
     
     if search_query:
         query = query.filter(
             db.or_(
                 Buku.judul.ilike(f'%{search_query}%'),
                 Buku.isbn.ilike(f'%{search_query}%'),
-                Buku.penulis.ilike(f'%{search_query}%')
+                Buku.pengarang.ilike(f'%{search_query}%')
             )
         )
     
     if kategori_filter:
-        query = query.filter_by(id_kategori=kategori_filter)
+        query = query.filter_by(kategori=kategori_filter)
     
     buku_list = query.order_by(Buku.judul).all()
     
-    # Ambil daftar kategori dari database
-    categories = KategoriBuku.query.order_by(KategoriBuku.nama_kategori).all()
+    # Ambil daftar kategori unik
+    categories = db.session.query(Buku.kategori).distinct().filter(Buku.kategori != None).all()
+    categories = [c[0] for c in categories]
     
     return render_template('anggota/katalog.html',
                          buku_list=buku_list,
@@ -57,22 +58,22 @@ def detail_buku(id):
     
     # Cek apakah user sedang meminjam buku ini
     sedang_meminjam = Peminjaman.query.filter_by(
-        id_peminjam=current_user.id,
-        id_buku=id,
-        tgl_kembali_realisasi=None
+        pengguna_id=current_user.id,
+        buku_id=id,
+        tgl_kembali=None
     ).first()
     
     # Cek apakah user sudah mereservasi buku ini
     sudah_reservasi = Reservasi.query.filter_by(
-        id_pemesan=current_user.id,
-        id_buku=id,
-        status_antrian='menunggu'
+        pengguna_id=current_user.id,
+        buku_id=id,
+        status='menunggu'
     ).first()
     
     # Hitung jumlah antrian reservasi
     antrian_reservasi = Reservasi.query.filter_by(
-        id_buku=id,
-        status_antrian='menunggu'
+        buku_id=id,
+        status='menunggu'
     ).count()
     
     return render_template('anggota/detail_buku.html',
@@ -94,9 +95,9 @@ def buat_reservasi(buku_id):
     
     # Cek apakah sudah ada reservasi aktif
     existing = Reservasi.query.filter_by(
-        id_pemesan=current_user.id,
-        id_buku=buku_id,
-        status_antrian='menunggu'
+        pengguna_id=current_user.id,
+        buku_id=buku_id,
+        status='menunggu'
     ).first()
     
     if existing:
@@ -105,26 +106,33 @@ def buat_reservasi(buku_id):
     
     # Cek apakah sedang meminjam buku ini
     sedang_pinjam = Peminjaman.query.filter_by(
-        id_peminjam=current_user.id,
-        id_buku=buku_id,
-        tgl_kembali_realisasi=None
+        pengguna_id=current_user.id,
+        buku_id=buku_id,
+        tgl_kembali=None
     ).first()
     
     if sedang_pinjam:
         flash('Anda sedang meminjam buku ini. Tidak perlu reservasi.', 'warning')
         return redirect(url_for('anggota.detail_buku', id=buku_id))
     
+    # Hitung posisi antrian
+    antrian_ke = Reservasi.query.filter_by(
+        buku_id=buku_id,
+        status='menunggu'
+    ).count() + 1
+    
     # Buat reservasi baru
     reservasi_baru = Reservasi(
-        id_pemesan=current_user.id,
-        id_buku=buku_id,
-        status_antrian='menunggu'
+        pengguna_id=current_user.id,
+        buku_id=buku_id,
+        status='menunggu',
+        antrian_ke=antrian_ke
     )
     
     db.session.add(reservasi_baru)
     db.session.commit()
     
-    flash(f'Berhasil memesan "{buku.judul}".', 'success')
+    flash(f'Berhasil memesan "{buku.judul}". Posisi antrian: {antrian_ke}', 'success')
     return redirect(url_for('anggota.detail_buku', id=buku_id))
 
 
@@ -138,7 +146,7 @@ def peminjaman_saya():
     
     # Ambil semua peminjaman (aktif dan sudah dikembalikan)
     semua_peminjaman = Peminjaman.query.filter_by(
-        id_peminjam=current_user.id
+        pengguna_id=current_user.id
     ).order_by(Peminjaman.tgl_pinjam.desc()).all()
     
     return render_template('anggota/peminjaman_saya.html',
@@ -156,24 +164,24 @@ def perpanjang_peminjaman(id):
     peminjaman = Peminjaman.query.get_or_404(id)
     
     # Validasi: hanya bisa perpanjang milik sendiri
-    if peminjaman.id_peminjam != current_user.id:
+    if peminjaman.pengguna_id != current_user.id:
         flash('Anda tidak memiliki akses ke peminjaman ini.', 'error')
         return redirect(url_for('anggota.peminjaman_saya'))
     
     # Validasi: hanya yang belum dikembalikan
-    if peminjaman.tgl_kembali_realisasi:
+    if peminjaman.tgl_kembali:
         flash('Peminjaman ini sudah dikembalikan.', 'warning')
         return redirect(url_for('anggota.peminjaman_saya'))
     
     # Validasi: belum pernah diperpanjang
-    if peminjaman.sudah_diperpanjang:
+    if peminjaman.diperpanjang:
         flash('Peminjaman ini sudah pernah diperpanjang sebelumnya.', 'warning')
         return redirect(url_for('anggota.peminjaman_saya'))
     
     # Validasi: tidak ada yang reservasi buku ini
     ada_reservasi = Reservasi.query.filter_by(
-        id_buku=peminjaman.id_buku,
-        status_antrian='menunggu'
+        buku_id=peminjaman.buku_id,
+        status='menunggu'
     ).first()
     
     if ada_reservasi:
@@ -181,14 +189,14 @@ def perpanjang_peminjaman(id):
         return redirect(url_for('anggota.peminjaman_saya'))
     
     # Validasi: belum lewat dari jatuh tempo
-    if date.today() > peminjaman.tgl_jatuh_tempo:
+    if datetime.utcnow() > peminjaman.tgl_jatuh_tempo:
         flash('Tidak dapat memperpanjang karena sudah melewati batas waktu.', 'error')
         return redirect(url_for('anggota.peminjaman_saya'))
     
     # Tambahkan durasi sesuai role
     durasi_tambahan = 30 if current_user.peran == 'dosen' else 14
     peminjaman.tgl_jatuh_tempo = peminjaman.tgl_jatuh_tempo + timedelta(days=durasi_tambahan)
-    peminjaman.sudah_diperpanjang = True
+    peminjaman.diperpanjang = True
     
     db.session.commit()
     
@@ -205,8 +213,8 @@ def reservasi_saya():
         return redirect(url_for('auth.login'))
     
     semua_reservasi = Reservasi.query.filter_by(
-        id_pemesan=current_user.id
-    ).order_by(Reservasi.tgl_pemesanan.desc()).all()
+        pengguna_id=current_user.id
+    ).order_by(Reservasi.tgl_reservasi.desc()).all()
     
     return render_template('anggota/reservasi_saya.html',
                          semua_reservasi=semua_reservasi)
@@ -222,15 +230,15 @@ def batalkan_reservasi(id):
     
     reservasi = Reservasi.query.get_or_404(id)
     
-    if reservasi.id_pemesan != current_user.id:
+    if reservasi.pengguna_id != current_user.id:
         flash('Anda tidak memiliki akses ke reservasi ini.', 'error')
         return redirect(url_for('anggota.reservasi_saya'))
     
-    if reservasi.status_antrian != 'menunggu':
+    if reservasi.status != 'menunggu':
         flash('Reservasi ini tidak dapat dibatalkan.', 'warning')
         return redirect(url_for('anggota.reservasi_saya'))
     
-    reservasi.status_antrian = 'batal'
+    reservasi.status = 'dibatalkan'
     db.session.commit()
     
     flash('Reservasi berhasil dibatalkan.', 'success')
