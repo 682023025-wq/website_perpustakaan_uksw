@@ -1,6 +1,4 @@
-```
-# Python
-__pycache__/
+# Compiled and build artifacts
 *.pyc
 *.pyo
 *.pyd
@@ -8,8 +6,6 @@ __pycache__/
 env/
 venv/
 .venv/
-.ENV
-.venv.bak/
 pip-log.txt
 pip-delete-this-directory.txt
 .tox/
@@ -20,7 +16,26 @@ nosetests.xml
 coverage.xml
 *.cover
 *.log
-.git/modules/
 .DS_Store
 Thumbs.db
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.local
+*.env
+
+# Build and distribution artifacts
+dist/
+build/
+*.egg-info/
 ```
