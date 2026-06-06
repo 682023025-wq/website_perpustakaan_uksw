@@ -1,17 +1,10 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from models import db, Pengguna, Buku, Peminjaman, Reservasi
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from sqlalchemy import func
 
 admin_bp = Blueprint('admin', __name__)
-
-
-def get_role_required():
-    """Dapatkan decorator role_required dari app"""
-    from app import create_app
-    app = create_app()
-    return app.role_required
 
 
 @admin_bp.route('/dashboard')
@@ -26,19 +19,19 @@ def dashboard():
     # Statistik umum
     total_anggota = Pengguna.query.filter(Pengguna.peran.in_(['mahasiswa', 'dosen'])).count()
     total_buku = Buku.query.count()
-    peminjaman_aktif = Peminjaman.query.filter_by(tgl_kembali=None).count()
-    reservasi_menunggu = Reservasi.query.filter_by(status='menunggu').count()
+    peminjaman_aktif = Peminjaman.query.filter_by(tgl_kembali_realisasi=None).count()
+    reservasi_menunggu = Reservasi.query.filter_by(status_antrian='menunggu').count()
     
     # Anggota dengan denda belum lunas
     anggota_berdenda = db.session.query(Pengguna).join(Peminjaman).filter(
-        Peminjaman.status_denda == 'belum_lunas',
-        Peminjaman.denda > 0
+        Peminjaman.status_pembayaran_denda == 'belum_bayar',
+        Peminjaman.nominal_denda > 0
     ).distinct().limit(5).all()
     
     # Buku paling banyak dipinjam
-    buku_populer = db.session.query(Buku, func.count(Peminjaman.buku_id).label('jumlah_pinjam')).join(
+    buku_populer = db.session.query(Buku, func.count(Peminjaman.id_buku).label('jumlah_pinjam')).join(
         Peminjaman
-    ).group_by(Buku.id).order_by(func.count(Peminjaman.buku_id).desc()).limit(5).all()
+    ).group_by(Buku.id).order_by(func.count(Peminjaman.id_buku).desc()).limit(5).all()
     
     return render_template('super_petugas/dashboard.html',
                          total_anggota=total_anggota,

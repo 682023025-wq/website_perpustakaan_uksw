@@ -4,51 +4,66 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.py~
+*.py.class
+*.py.class.*
 .Python
+*.so
+*.egg-info/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
 env/
-venv/
-.venv/
-.ENV
-.ENV.local
-.env
-.env.local
-.env.*
-.venv/
-venv/
 ENV/
-ENV.local
-env.bak/
-venv.bak/
-.python-version
+.ENV/
+.envrc
 
-# Flask/Sessions
-.sessions/
-*.session
+# Build and distribution artifacts
+build/
+dist/
+*.egg
+*.whl
+pip-wheel-metadata/
 
-# Coverage
+# Testing
 .coverage
-.coverage.*
+coverage/
 htmlcov/
-.coverage.xml
-.coverage.json
+.pytest_cache/
+.hypothesis/
 
 # Logs
 *.log
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-Thumbs.db:encryptable
+# Environment variables
+.env
+.env.local
+.env.*
 
-# IDE
+# IDE and editor files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Dependencies cache
+.mypy_cache/
+.npm/
+.yarn/
+node_modules/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Documentation builds
+docs/_build/
 ```
