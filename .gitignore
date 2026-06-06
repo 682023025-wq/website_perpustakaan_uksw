@@ -4,32 +4,17 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.py~
 
 # Dependencies
 .venv/
 venv/
 env/
-.ENV/
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-
-# Environment
-.env
-.env.local
-*.env.*
-
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Build and distribution
-dist/
+# Build/dist
 build/
+dist/
+*.egg
 *.egg-info/
 ```
