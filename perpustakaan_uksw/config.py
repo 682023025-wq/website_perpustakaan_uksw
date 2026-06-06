@@ -41,3 +41,10 @@ class Config:
     # Konfigurasi Flask-Login
     LOGIN_VIEW = 'auth.login'
     PERMANENT_SESSION_LIFETIME = 3600  # 1 jam
+    
+    # Konfigurasi Upload File
+    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
+    PROFILE_UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, 'profiles')
+    BOOK_COVER_UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, 'book_covers')
+    MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # Max 5MB per file
+    ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}

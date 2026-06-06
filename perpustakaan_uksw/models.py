@@ -48,6 +48,9 @@ class Pengguna(UserMixin, db.Model):
     # Relasi ke reservasi
     reservasi = db.relationship('Reservasi', backref='pemesan', lazy='dynamic')
     
+    # Foto profil (path file atau URL)
+    foto_profil = db.Column(db.String(255))
+    
     def set_password(self, password):
         """Hash password sebelum disimpan"""
         self.kata_sandi_hash = generate_password_hash(password)
